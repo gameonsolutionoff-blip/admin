@@ -8,6 +8,8 @@ import { Save, ArrowLeft, Plus, X } from "lucide-react";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
 import { imageFileToDataUrl } from "@/lib/imageUpload";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 import { API_BASE_URL } from "@/lib/api";
 
 const API_URL = API_BASE_URL;
@@ -28,6 +30,22 @@ const BlogEdit = () => {
 
   const [newTag, setNewTag] = useState("");
   const [imageName, setImageName] = useState("");
+
+  const quillModules = {
+    toolbar: [
+      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+      ["bold", "italic", "underline", "strike", "blockquote"],
+      [{ align: [] }],
+      [
+        { list: "ordered" },
+        { list: "bullet" },
+        { indent: "-1" },
+        { indent: "+1" },
+      ],
+      ["link", "image", "video"],
+      ["clean"],
+    ],
+  };
 
   useEffect(() => {
     const fetchBlog = async () => {
@@ -218,14 +236,17 @@ const BlogEdit = () => {
 
           <div>
             <Label>Content</Label>
-            <Textarea
-              value={formData.content}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, content: e.target.value }))
-              }
-              required
-              className="min-h-[200px]"
-            />
+            <div className="mt-2 border-green-200 focus-within:border-green-500 rounded-md">
+              <ReactQuill
+                theme="snow"
+                value={formData.content}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, content: value }))
+                }
+                modules={quillModules}
+                className="bg-white min-h-[300px] pb-10"
+              />
+            </div>
           </div>
 
           <Button type="submit" className="bg-green-600 hover:bg-green-700">

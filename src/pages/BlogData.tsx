@@ -401,9 +401,10 @@ const BlogData = () => {
                     <p className="text-sm text-gray-500 mb-2">
                       Content Preview:
                     </p>
-                    <div className="bg-gray-50 p-3 rounded text-sm max-h-32 overflow-y-auto">
-                      {post.content || "No content available"}
-                    </div>
+                    <div 
+                      className="bg-gray-50 p-3 rounded text-sm max-h-32 overflow-y-auto prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: post.content || "No content available" }}
+                    />
                   </div>
                 </CardContent>
               </Card>

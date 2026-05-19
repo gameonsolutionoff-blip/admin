@@ -19,7 +19,7 @@ const processes = [
 const children = processes.map(({ name, command, args }) => {
   const child = spawn(command, args, {
     stdio: ["inherit", "pipe", "pipe"],
-    shell: false,
+    shell: isWindows,
   });
 
   child.stdout.on("data", (data) => {

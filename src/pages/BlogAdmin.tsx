@@ -227,6 +227,8 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Plus, X, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import axios from "axios";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 import { imageFileToDataUrl } from "@/lib/imageUpload";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -254,6 +256,22 @@ const BlogAdmin = () => {
   const [newTag, setNewTag] = useState("");
   const [loading, setLoading] = useState(false);
   const [imageName, setImageName] = useState("");
+
+  const quillModules = {
+    toolbar: [
+      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+      ["bold", "italic", "underline", "strike", "blockquote"],
+      [{ align: [] }],
+      [
+        { list: "ordered" },
+        { list: "bullet" },
+        { indent: "-1" },
+        { indent: "+1" },
+      ],
+      ["link", "image", "video"],
+      ["clean"],
+    ],
+  };
 
   const generateSlug = (title: string) => {
     return title
@@ -490,16 +508,17 @@ const BlogAdmin = () => {
               <Label htmlFor="content" className="text-green-800 font-semibold">
                 Content *
               </Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, content: e.target.value }))
-                }
-                placeholder="Write your blog content here..."
-                className="mt-2 border-green-200 focus:border-green-500 min-h-[300px]"
-                required
-              />
+              <div className="mt-2 border-green-200 focus-within:border-green-500 rounded-md">
+                <ReactQuill
+                  theme="snow"
+                  value={formData.content}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, content: value }))
+                  }
+                  modules={quillModules}
+                  className="bg-white min-h-[300px] pb-10"
+                />
+              </div>
             </div>
 
             <div className="flex gap-4 pt-6">
