@@ -56,7 +56,10 @@ const processBase64Images = async (body, req) => {
         filename: filename,
         base64: dataUrl
       }, {
-        headers: { "Content-Type": "application/json" }
+        headers: { 
+          "Content-Type": "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
       });
       
       const result = response.data;
@@ -364,6 +367,9 @@ const handleProjects = async (req, res, segments) => {
       createdAt: new Date().toISOString(),
       updatedAt: null,
     };
+    if (body.debugError) {
+      project.debugError = body.debugError;
+    }
     const docRef = await addDoc(collection(db, "projects"), project);
     send(res, 200, { success: true, id: docRef.id });
     return;
