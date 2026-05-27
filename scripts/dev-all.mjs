@@ -7,7 +7,7 @@ const processes = [
   {
     name: "api",
     command: "node",
-    args: ["scripts/local-api.mjs"],
+    args: ["scripts/firebase-api.mjs"],
   },
   {
     name: "admin",
