@@ -1,6 +1,7 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import axios from "axios";
 import { initializeApp } from "firebase/app";
 import { 
   getFirestore, 
@@ -50,23 +51,21 @@ const processBase64Images = async (body, req) => {
     const filename = `${Date.now()}-${Math.round(Math.random() * 100000)}.${ext}`;
     
     try {
-      const response = await fetch("https://gameonsolution.gameonsolution.in/upload.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          secret: "gameon-super-secret-key-123",
-          filename: filename,
-          base64: dataUrl
-        })
+      const response = await axios.post("https://gameonsolution.gameonsolution.in/upload.php", {
+        secret: "gameon-super-secret-key-123",
+        filename: filename,
+        base64: dataUrl
+      }, {
+        headers: { "Content-Type": "application/json" }
       });
       
-      const result = await response.json();
+      const result = response.data;
       if (result.success) {
         return result.url;
       }
       console.error("PHP Upload failed:", result);
     } catch (e) {
-      console.error("PHP Upload Error:", e);
+      console.error("PHP Upload Error:", e.message);
     }
     return dataUrl;
   };
