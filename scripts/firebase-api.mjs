@@ -77,6 +77,7 @@ const processBase64Images = async (body, req) => {
         body[field] = res.url;
       } else if (res.error) {
         body.debugError = res.error; // save the error to the db document
+        body[field] = "UPLOAD_FAILED_CHECK_DEBUG_ERROR"; // Clear massive base64 so Firestore doesn't crash!
       }
     }
   }
