@@ -61,19 +61,23 @@ const processBase64Images = async (body, req) => {
       
       const result = response.data;
       if (result.success) {
-        return result.url;
+        return { url: result.url };
       }
-      console.error("PHP Upload failed:", result);
+      return { error: "PHP Upload failed: " + JSON.stringify(result) };
     } catch (e) {
-      console.error("PHP Upload Error:", e.message);
+      return { error: "PHP Upload Error: " + (e.response ? e.response.status + " " + JSON.stringify(e.response.data) : e.message) };
     }
-    return dataUrl;
   };
 
   const fieldsToCheck = ["image", "imageUrl", "mediaUrl"];
   for (const field of fieldsToCheck) {
     if (body[field] && typeof body[field] === "string" && body[field].startsWith("data:")) {
-      body[field] = await saveBase64ToHostinger(body[field]);
+      const res = await saveBase64ToHostinger(body[field]);
+      if (res.url) {
+        body[field] = res.url;
+      } else if (res.error) {
+        body.debugError = res.error; // save the error to the db document
+      }
     }
   }
 
