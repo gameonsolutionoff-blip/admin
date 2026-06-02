@@ -5,6 +5,7 @@ import axios from "axios";
 import { initializeApp } from "firebase/app";
 import { 
   getFirestore, 
+  initializeFirestore,
   collection, 
   getDocs, 
   doc, 
@@ -26,7 +27,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true
+});
 const port = Number(process.env.PORT || 4000);
 
 const send = (res, status, body) => {
