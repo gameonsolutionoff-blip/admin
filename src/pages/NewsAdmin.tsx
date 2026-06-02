@@ -14,7 +14,8 @@ import { imageFileToDataUrl } from "@/lib/imageUpload";
 const NewsAdmin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [formData, setFormData] = useState({ title: "", imageUrl: "", details: "" });
+  const [uploadType, setUploadType] = useState<"image" | "youtube">("image");
+  const [formData, setFormData] = useState({ title: "", imageUrl: "", details: "", youtubeUrl: "" });
   const [saving, setSaving] = useState(false);
   const [imageName, setImageName] = useState("");
 
@@ -28,10 +29,13 @@ const NewsAdmin = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.imageUrl || !formData.details.trim()) {
+    const isYoutube = uploadType === "youtube";
+    const mediaUrl = isYoutube ? formData.youtubeUrl : formData.imageUrl;
+    
+    if (!formData.title.trim() || !mediaUrl || !formData.details.trim()) {
       toast({
         title: "Missing details",
-        description: "News title, image, and details are required.",
+        description: isYoutube ? "News title, YouTube link, and details are required." : "News title, image, and details are required.",
         variant: "destructive",
       });
       return;
@@ -41,7 +45,8 @@ const NewsAdmin = () => {
     try {
       await axios.post(`${API_BASE_URL}/api/news-feeds`, {
         title: formData.title.trim(),
-        imageUrl: formData.imageUrl,
+        imageUrl: mediaUrl,
+        fileType: uploadType,
         details: formData.details.trim(),
       });
       toast({ title: "News saved", description: "News feed item created." });
@@ -83,6 +88,30 @@ const NewsAdmin = () => {
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
+                <Label className="text-green-800 font-semibold mb-2 block">Upload Type</Label>
+                <div className="flex space-x-4">
+                  <label className="flex items-center space-x-2">
+                    <input 
+                      type="radio" 
+                      checked={uploadType === "image"} 
+                      onChange={() => setUploadType("image")} 
+                      className="form-radio text-green-600 h-4 w-4"
+                    />
+                    <span>Image Upload</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input 
+                      type="radio" 
+                      checked={uploadType === "youtube"} 
+                      onChange={() => setUploadType("youtube")} 
+                      className="form-radio text-green-600 h-4 w-4"
+                    />
+                    <span>YouTube Link</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="title" className="text-green-800">
                   News Title *
                 </Label>
@@ -96,20 +125,36 @@ const NewsAdmin = () => {
                   maxLength={100}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="image" className="text-green-800">
-                  Upload Image *
-                </Label>
-                <Input id="image" type="file" accept="image/*" onChange={handleImageChange} />
-                {imageName && <p className="text-sm text-green-700">{imageName}</p>}
-                {formData.imageUrl && (
-                  <img
-                    src={formData.imageUrl}
-                    alt="Selected news"
-                    className="mt-3 h-44 w-full rounded-md border border-green-100 object-cover"
+
+              {uploadType === "image" ? (
+                <div className="space-y-2">
+                  <Label htmlFor="image" className="text-green-800">
+                    Upload Image *
+                  </Label>
+                  <Input id="image" type="file" accept="image/*" onChange={handleImageChange} />
+                  {imageName && <p className="text-sm text-green-700">{imageName}</p>}
+                  {formData.imageUrl && (
+                    <img
+                      src={formData.imageUrl}
+                      alt="Selected news"
+                      className="mt-3 h-44 w-full rounded-md border border-green-100 object-cover"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="youtube" className="text-green-800">
+                    YouTube URL *
+                  </Label>
+                  <Input 
+                    id="youtube" 
+                    type="url" 
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={formData.youtubeUrl}
+                    onChange={(e) => setFormData(c => ({...c, youtubeUrl: e.target.value}))}
                   />
-                )}
-              </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="details" className="text-green-800">
                   Details *

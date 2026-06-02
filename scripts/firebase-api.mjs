@@ -461,6 +461,13 @@ const server = http.createServer(async (req, res) => {
       });
       return;
     }
+    if (segments[0] === "api" && segments[1] === "awards") {
+      await handleCollection(req, res, segments, {
+        key: "awards", singleKey: "award", label: "Award",
+        required: ["title", "imageUrl", "date"],
+      });
+      return;
+    }
     send(res, 404, { success: false, message: "Route not found" });
   } catch (error) {
     console.error(error);

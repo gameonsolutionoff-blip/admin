@@ -229,6 +229,51 @@ const Index = () => {
             </div>
           </div>
 
+          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
+            <div>
+              <div className="flex items-center mb-4">
+                <Trophy className="w-7 h-7 text-green-600 mr-3" />
+                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
+                  Add Award
+                </h2>
+              </div>
+              <p className="text-gray-600 mb-6 leading-relaxed">
+                Create award items with a title, image logo, and date/year.
+              </p>
+            </div>
+            <div className="mt-4">
+              <Link to="/awards-admin">
+                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                  Add Award
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
+            <div>
+              <div className="flex items-center mb-4">
+                <Database className="w-7 h-7 text-green-600 mr-3" />
+                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
+                  Awards Data
+                </h2>
+              </div>
+              <p className="text-gray-600 mb-6 leading-relaxed">
+                Review and delete all awards from one admin screen.
+              </p>
+            </div>
+            <div className="mt-4">
+              <Link to="/awards-data">
+                <Button
+                  variant="outline"
+                  className="w-full border-green-600 text-green-600 hover:bg-green-50"
+                >
+                  View Awards
+                </Button>
+              </Link>
+            </div>
+          </div>
+
           <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px] md:col-span-2">
             <div>
               <div className="flex items-center mb-4">

@@ -1,44 +1,35 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { ArrowLeft, Newspaper, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Trophy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/lib/api";
 
-interface NewsFeed {
+interface Award {
   id: string;
   title: string;
   imageUrl: string;
-  details: string;
-  fileType?: "image" | "youtube";
+  date: string;
   createdAt?: string;
 }
 
-const NewsData = () => {
+const AwardsData = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [items, setItems] = useState<NewsFeed[]>([]);
+  const [items, setItems] = useState<Award[]>([]);
   const [loading, setLoading] = useState(true);
 
-  function getYouTubeID(url: string) {
-    if (!url) return null;
-    const regExp =
-      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[2].length === 11 ? match[2] : null;
-  }
-
-  const fetchNews = async () => {
+  const fetchAwards = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/news-feeds`);
-      setItems(res.data?.newsFeeds || []);
+      const res = await axios.get(`${API_BASE_URL}/api/awards`);
+      setItems(res.data?.awards || []);
     } catch (error: any) {
       toast({
         title: "Fetch failed",
-        description: error?.response?.data?.message || "Could not fetch news.",
+        description: error?.response?.data?.message || "Could not fetch awards.",
         variant: "destructive",
       });
     } finally {
@@ -47,14 +38,14 @@ const NewsData = () => {
   };
 
   useEffect(() => {
-    fetchNews();
+    fetchAwards();
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Delete this news feed item?")) return;
-    await axios.delete(`${API_BASE_URL}/api/news-feeds/${id}`);
+    if (!window.confirm("Delete this award item?")) return;
+    await axios.delete(`${API_BASE_URL}/api/awards/${id}`);
     setItems((current) => current.filter((item) => item.id !== id));
-    toast({ title: "Deleted", description: "News feed item removed." });
+    toast({ title: "Deleted", description: "Award item removed." });
   };
 
   return (
@@ -70,10 +61,10 @@ const NewsData = () => {
             Back to Dashboard
           </Button>
           <div className="flex gap-2">
-            <Button onClick={() => navigate("/news-admin")} className="bg-green-600 hover:bg-green-700">
-              Add News
+            <Button onClick={() => navigate("/awards-admin")} className="bg-green-600 hover:bg-green-700 text-white">
+              Add Award
             </Button>
-            <Button variant="outline" onClick={fetchNews}>
+            <Button variant="outline" onClick={fetchAwards}>
               Refresh
             </Button>
           </div>
@@ -81,15 +72,15 @@ const NewsData = () => {
         <Card className="border-2 border-green-200">
           <CardHeader className="bg-green-600 text-white">
             <CardTitle className="text-2xl flex items-center">
-              <Newspaper className="mr-2" />
-              All News Feed ({items.length})
+              <Trophy className="mr-2" />
+              All Awards ({items.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             {loading ? (
-              <div className="text-center py-12 text-green-600">Loading news...</div>
+              <div className="text-center py-12 text-green-600">Loading awards...</div>
             ) : items.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">No news feed items yet</div>
+              <div className="text-center py-12 text-gray-500">No awards yet</div>
             ) : (
               <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {items.map((item) => (
@@ -97,23 +88,19 @@ const NewsData = () => {
                     key={item.id}
                     className="overflow-hidden border-green-200 hover:border-green-400 transition-colors flex flex-col"
                   >
-                    <div className="aspect-video bg-gray-200">
+                    <div className="aspect-video bg-yellow-100/20 flex items-center justify-center p-4">
                       <img
-                        src={
-                          item.fileType === "youtube"
-                            ? `https://img.youtube.com/vi/${getYouTubeID(item.imageUrl)}/hqdefault.jpg`
-                            : item.imageUrl
-                        }
+                        src={item.imageUrl}
                         alt={item.title}
-                        className="h-full w-full object-cover"
+                        className="h-full max-w-full object-contain"
                       />
                     </div>
                     <CardContent className="p-4 flex flex-col flex-grow">
                       <h3 className="font-bold text-lg text-green-800 mb-2 line-clamp-2">
                         {item.title}
                       </h3>
-                      <p className="text-sm text-gray-700 mb-4 line-clamp-4 flex-grow">
-                        {item.details}
+                      <p className="text-sm text-gray-700 mb-4 line-clamp-1 flex-grow">
+                        {item.date}
                       </p>
                       <div className="flex items-center justify-between text-xs text-gray-500 gap-2">
                         <span>
@@ -122,14 +109,6 @@ const NewsData = () => {
                             : "Unknown date"}
                         </span>
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/news-edit/${item.id}`)}
-                            className="border-green-600 text-green-600 hover:bg-green-50"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
                           <Button variant="destructive" size="sm" onClick={() => handleDelete(item.id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -147,4 +126,4 @@ const NewsData = () => {
   );
 };
 
-export default NewsData;
+export default AwardsData;

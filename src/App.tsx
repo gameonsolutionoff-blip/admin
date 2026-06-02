@@ -18,6 +18,8 @@ import NewsAdmin from "./pages/NewsAdmin";
 import NewsData from "./pages/NewsData";
 import NewsEdit from "./pages/NewsEdit";
 import ContactResponses from "./pages/ContactResponses";
+import AwardsAdmin from "./pages/AwardsAdmin";
+import AwardsData from "./pages/AwardsData";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +44,8 @@ const App = () => (
           <Route path="/news-data" element={<NewsData />} />
           <Route path="/news-edit/:id" element={<NewsEdit />} />
           <Route path="/contact-responses" element={<ContactResponses />} />
+          <Route path="/awards-admin" element={<AwardsAdmin />} />
+          <Route path="/awards-data" element={<AwardsData />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
