@@ -229,7 +229,7 @@ import { toast } from "@/hooks/use-toast";
 import axios from "axios";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { imageFileToDataUrl } from "@/lib/imageUpload";
+import { uploadMediaDirectly } from "@/lib/imageUpload";
 import { API_BASE_URL } from "@/lib/api";
 
 interface BlogPost {
@@ -345,7 +345,7 @@ const BlogAdmin = () => {
     setImageName(file.name);
     toast({
       title: "Image selected",
-      description: `${file.name} is ready to upload.`,
+      description: `${file.name} will replace the current image.`,
     });
   };
 
@@ -356,9 +356,10 @@ const BlogAdmin = () => {
     let finalImageBase64 = formData.image;
     if (selectedFile) {
       try {
-        finalImageBase64 = await imageFileToDataUrl(selectedFile);
+        toast({ title: "Uploading Image...", description: "Please wait, uploading image quickly." });
+        finalImageBase64 = await uploadMediaDirectly(selectedFile);
       } catch (err) {
-        toast({ title: "Error", description: "Failed to read image file.", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to upload image.", variant: "destructive" });
         setLoading(false);
         return;
       }

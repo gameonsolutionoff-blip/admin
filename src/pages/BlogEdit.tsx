@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Save, ArrowLeft, Plus, X } from "lucide-react";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
-import { imageFileToDataUrl } from "@/lib/imageUpload";
+import { uploadMediaDirectly } from "@/lib/imageUpload";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { API_BASE_URL } from "@/lib/api";
@@ -129,9 +129,10 @@ const BlogEdit = () => {
     let finalImageBase64 = formData.image;
     if (selectedFile) {
       try {
-        finalImageBase64 = await imageFileToDataUrl(selectedFile);
+        toast({ title: "Uploading Image...", description: "Please wait, uploading image quickly." });
+        finalImageBase64 = await uploadMediaDirectly(selectedFile);
       } catch (err) {
-        toast({ title: "Error", description: "Failed to read image file.", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to upload image.", variant: "destructive" });
         return;
       }
     }

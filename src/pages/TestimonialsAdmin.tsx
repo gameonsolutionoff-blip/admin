@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/lib/api";
-import { mediaFileToDataUrl } from "@/lib/imageUpload";
+import { mediaFileToDataUrl, uploadMediaDirectly } from "@/lib/imageUpload";
 
 const initialForm = {
   name: "",
@@ -66,8 +66,8 @@ const TestimonialsAdmin = () => {
     let finalMediaUrl = formData.mediaUrl;
     if (selectedFile) {
       try {
-        toast({ title: "Processing Media...", description: "Please wait, processing file for upload." });
-        finalMediaUrl = await mediaFileToDataUrl(selectedFile);
+        toast({ title: "Uploading Media...", description: "Please wait, uploading file quickly." });
+        finalMediaUrl = await uploadMediaDirectly(selectedFile);
       } catch (err) {
         toast({ title: "Error", description: "Failed to read media file.", variant: "destructive" });
         setSaving(false);
