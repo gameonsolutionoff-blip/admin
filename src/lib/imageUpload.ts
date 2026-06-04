@@ -30,7 +30,7 @@ export const uploadMediaDirectly = async (file: File): Promise<string> => {
   formData.append("secret", "gameon-super-secret-key-123");
 
   try {
-    const response = await fetch("https://gameonsolution.gameonsolution.in/upload.php", {
+    const response = await fetch("https://gameonsolution.in/upload.php", {
       method: "POST",
       body: formData,
     });
