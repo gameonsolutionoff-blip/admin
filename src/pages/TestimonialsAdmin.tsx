@@ -25,32 +25,35 @@ const TestimonialsAdmin = () => {
   const [formData, setFormData] = useState(initialForm);
   const [fileName, setFileName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
-  const handleMediaChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    try {
-      const mediaUrl = await mediaFileToDataUrl(file);
-      setFormData((current) => ({
-        ...current,
-        mediaUrl,
-        mediaType: file.type.startsWith("video/") ? "video" : "image",
-      }));
-      setFileName(file.name);
-    } catch (error: any) {
-      e.target.value = "";
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
       toast({
         title: "Invalid media",
-        description: error?.message || "Please upload an image or video.",
+        description: "Please upload an image or video.",
         variant: "destructive",
       });
+      e.target.value = "";
+      return;
     }
+
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setFileName(file.name);
+    setFormData((current) => ({
+      ...current,
+      mediaType: file.type.startsWith("video/") ? "video" : "image",
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.feedback.trim() || !formData.mediaUrl) {
+    if (!formData.name.trim() || !formData.feedback.trim() || (!formData.mediaUrl && !selectedFile)) {
       toast({
         title: "Missing details",
         description: "Name, feedback, and cover media are required.",
@@ -60,11 +63,22 @@ const TestimonialsAdmin = () => {
     }
 
     setSaving(true);
+    let finalMediaUrl = formData.mediaUrl;
+    if (selectedFile) {
+      try {
+        toast({ title: "Processing Media...", description: "Please wait, processing file for upload." });
+        finalMediaUrl = await mediaFileToDataUrl(selectedFile);
+      } catch (err) {
+        toast({ title: "Error", description: "Failed to read media file.", variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+    }
     try {
       await axios.post(`${API_BASE_URL}/api/testimonials`, {
         name: formData.name.trim(),
         feedback: formData.feedback.trim(),
-        mediaUrl: formData.mediaUrl,
+        mediaUrl: finalMediaUrl,
         mediaType: formData.mediaType,
         instagramUrl: formData.instagramUrl.trim(),
       });
@@ -155,14 +169,30 @@ const TestimonialsAdmin = () => {
                   onChange={handleMediaChange}
                 />
                 {fileName && <p className="text-sm text-green-700">{fileName}</p>}
-                {formData.mediaUrl && formData.mediaType === "video" && (
+                
+                {previewUrl && formData.mediaType === "video" && (
+                  <video
+                    src={previewUrl}
+                    controls
+                    className="mt-3 h-56 w-full rounded-md border border-green-100 object-cover"
+                  />
+                )}
+                {!previewUrl && formData.mediaUrl && formData.mediaType === "video" && (
                   <video
                     src={formData.mediaUrl}
                     controls
                     className="mt-3 h-56 w-full rounded-md border border-green-100 object-cover"
                   />
                 )}
-                {formData.mediaUrl && formData.mediaType === "image" && (
+
+                {previewUrl && formData.mediaType === "image" && (
+                  <img
+                    src={previewUrl}
+                    alt="Selected testimonial cover"
+                    className="mt-3 h-56 w-full rounded-md border border-green-100 object-cover"
+                  />
+                )}
+                {!previewUrl && formData.mediaUrl && formData.mediaType === "image" && (
                   <img
                     src={formData.mediaUrl}
                     alt="Selected testimonial cover"

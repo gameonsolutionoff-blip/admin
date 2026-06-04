@@ -24,6 +24,8 @@ const TestimonialsEdit = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -44,13 +46,24 @@ const TestimonialsEdit = () => {
     fetchItem();
   }, [id, navigate, toast]);
 
-  const handleMediaChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const mediaUrl = await mediaFileToDataUrl(file);
+
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+      toast({
+        title: "Invalid media",
+        description: "Please upload an image or video.",
+        variant: "destructive",
+      });
+      e.target.value = "";
+      return;
+    }
+
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
     setFormData((current) => ({
       ...current,
-      mediaUrl,
       mediaType: file.type.startsWith("video/") ? "video" : "image",
     }));
   };
@@ -58,11 +71,23 @@ const TestimonialsEdit = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+
+    let finalMediaUrl = formData.mediaUrl;
+    if (selectedFile) {
+      try {
+        toast({ title: "Processing Media...", description: "Please wait, processing file for upload." });
+        finalMediaUrl = await mediaFileToDataUrl(selectedFile);
+      } catch (err) {
+        toast({ title: "Error", description: "Failed to read media file.", variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+    }
     try {
       await axios.put(`${API_BASE_URL}/api/testimonials/${id}`, {
         name: formData.name.trim(),
         feedback: formData.feedback.trim(),
-        mediaUrl: formData.mediaUrl,
+        mediaUrl: finalMediaUrl,
         mediaType: formData.mediaType,
         instagramUrl: formData.instagramUrl?.trim() || "",
       });
@@ -127,13 +152,29 @@ const TestimonialsEdit = () => {
               <div className="space-y-2">
                 <Label className="text-green-800">Replace Media</Label>
                 <Input type="file" accept="image/*,video/*" onChange={handleMediaChange} />
-                {formData.mediaUrl && formData.mediaType === "video" ? (
+                {previewUrl && formData.mediaType === "video" && (
+                  <video
+                    src={previewUrl}
+                    controls
+                    className="mt-3 h-56 w-full rounded-md border border-green-100 object-cover"
+                  />
+                )}
+                {!previewUrl && formData.mediaUrl && formData.mediaType === "video" && (
                   <video
                     src={formData.mediaUrl}
                     controls
                     className="mt-3 h-56 w-full rounded-md border border-green-100 object-cover"
                   />
-                ) : (
+                )}
+
+                {previewUrl && formData.mediaType === "image" && (
+                  <img
+                    src={previewUrl}
+                    alt="Testimonial cover"
+                    className="mt-3 h-56 w-full rounded-md border border-green-100 object-cover"
+                  />
+                )}
+                {!previewUrl && formData.mediaUrl && formData.mediaType === "image" && (
                   <img
                     src={formData.mediaUrl}
                     alt="Testimonial cover"

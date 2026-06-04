@@ -18,6 +18,8 @@ const BlogEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const [formData, setFormData] = useState({
     slug: "",
@@ -45,7 +47,26 @@ const BlogEdit = () => {
       ["link", "image", "video"],
       ["clean"],
     ],
+    clipboard: {
+      matchVisual: false,
+    }
   };
+
+  const quillFormats = [
+    "header",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "blockquote",
+    "list",
+    "bullet",
+    "indent",
+    "link",
+    "image",
+    "video",
+    "align",
+  ];
 
   useEffect(() => {
     const fetchBlog = async () => {
@@ -80,32 +101,46 @@ const BlogEdit = () => {
     }));
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    try {
-      const image = await imageFileToDataUrl(file);
-      setFormData((prev) => ({ ...prev, image }));
-      setImageName(file.name);
-      toast({
-        title: "Image selected",
-        description: `${file.name} will replace the current image.`,
-      });
-    } catch (err: any) {
-      e.target.value = "";
+    if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid Image",
-        description: err?.message || "Please select a valid image file.",
+        description: "Please select a valid image file.",
         variant: "destructive",
       });
+      e.target.value = "";
+      return;
     }
+
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setImageName(file.name);
+    toast({
+      title: "Image selected",
+      description: `${file.name} will replace the current image.`,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    let finalImageBase64 = formData.image;
+    if (selectedFile) {
+      try {
+        finalImageBase64 = await imageFileToDataUrl(selectedFile);
+      } catch (err) {
+        toast({ title: "Error", description: "Failed to read image file.", variant: "destructive" });
+        return;
+      }
+    }
+
     try {
-      await axios.put(`${API_URL}/api/blogs/${id}`, formData);
+      await axios.put(`${API_URL}/api/blogs/${id}`, {
+        ...formData,
+        image: finalImageBase64
+      });
       toast({ title: "✅ Blog Updated", description: "Changes saved!" });
       navigate("/blog-data");
     } catch (err) {
@@ -192,7 +227,14 @@ const BlogEdit = () => {
             {imageName && (
               <p className="mt-2 text-sm text-green-700">{imageName}</p>
             )}
-            {formData.image && (
+            {previewUrl && (
+              <img
+                src={previewUrl}
+                alt="Selected blog"
+                className="mt-3 h-40 w-full rounded-md object-cover border border-green-100"
+              />
+            )}
+            {!previewUrl && formData.image && (
               <img
                 src={formData.image}
                 alt="Selected blog"
@@ -244,6 +286,7 @@ const BlogEdit = () => {
                   setFormData((prev) => ({ ...prev, content: value }))
                 }
                 modules={quillModules}
+                formats={quillFormats}
                 className="bg-white min-h-[300px] pb-10"
               />
             </div>

@@ -256,6 +256,8 @@ const BlogAdmin = () => {
   const [newTag, setNewTag] = useState("");
   const [loading, setLoading] = useState(false);
   const [imageName, setImageName] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const quillModules = {
     toolbar: [
@@ -271,7 +273,26 @@ const BlogAdmin = () => {
       ["link", "image", "video"],
       ["clean"],
     ],
+    clipboard: {
+      matchVisual: false,
+    }
   };
+
+  const quillFormats = [
+    "header",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "blockquote",
+    "list",
+    "bullet",
+    "indent",
+    "link",
+    "image",
+    "video",
+    "align",
+  ];
 
   const generateSlug = (title: string) => {
     return title
@@ -305,34 +326,49 @@ const BlogAdmin = () => {
     }));
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    try {
-      const image = await imageFileToDataUrl(file);
-      setFormData((prev) => ({ ...prev, image }));
-      setImageName(file.name);
-      toast({
-        title: "Image selected",
-        description: `${file.name} is ready to upload.`,
-      });
-    } catch (err: any) {
-      e.target.value = "";
+    if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid Image",
-        description: err?.message || "Please select a valid image file.",
+        description: "Please select a valid image file.",
         variant: "destructive",
       });
+      e.target.value = "";
+      return;
     }
+
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setImageName(file.name);
+    toast({
+      title: "Image selected",
+      description: `${file.name} is ready to upload.`,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    let finalImageBase64 = formData.image;
+    if (selectedFile) {
+      try {
+        finalImageBase64 = await imageFileToDataUrl(selectedFile);
+      } catch (err) {
+        toast({ title: "Error", description: "Failed to read image file.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
-      const res = await axios.post(`${API_URL}/api/blogs`, formData);
+      const res = await axios.post(`${API_URL}/api/blogs`, {
+        ...formData,
+        image: finalImageBase64
+      });
 
       if (res.data.success) {
         toast({
@@ -456,7 +492,14 @@ const BlogAdmin = () => {
               {imageName && (
                 <p className="mt-2 text-sm text-green-700">{imageName}</p>
               )}
-              {formData.image && (
+              {previewUrl && (
+                <img
+                  src={previewUrl}
+                  alt="Selected blog"
+                  className="mt-3 h-40 w-full rounded-md object-cover border border-green-100"
+                />
+              )}
+              {!previewUrl && formData.image && (
                 <img
                   src={formData.image}
                   alt="Selected blog"
@@ -516,6 +559,7 @@ const BlogAdmin = () => {
                     setFormData((prev) => ({ ...prev, content: value }))
                   }
                   modules={quillModules}
+                  formats={quillFormats}
                   className="bg-white min-h-[300px] pb-10"
                 />
               </div>
