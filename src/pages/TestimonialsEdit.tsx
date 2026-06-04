@@ -77,8 +77,8 @@ const TestimonialsEdit = () => {
       try {
         toast({ title: "Uploading Media...", description: "Please wait, uploading file quickly." });
         finalMediaUrl = await uploadMediaDirectly(selectedFile);
-      } catch (err) {
-        toast({ title: "Error", description: "Failed to read media file.", variant: "destructive" });
+      } catch (err: any) {
+        toast({ title: "Upload Failed", description: err.message || "Could not upload to server. Did you update the main frontend?", variant: "destructive" });
         setSaving(false);
         return;
       }
