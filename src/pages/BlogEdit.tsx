@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Save, ArrowLeft, Plus, X } from "lucide-react";
+import { Save, ArrowLeft, Plus, X, FileText } from "lucide-react";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
 import { uploadMediaDirectly } from "@/lib/imageUpload";
@@ -14,10 +14,14 @@ import { API_BASE_URL } from "@/lib/api";
 
 const API_URL = API_BASE_URL;
 
+const inputClass =
+  "mt-2 border-black/10 focus-visible:ring-[#1B4332] focus-visible:border-[#1B4332]";
+
 const BlogEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
@@ -49,7 +53,7 @@ const BlogEdit = () => {
     ],
     clipboard: {
       matchVisual: false,
-    }
+    },
   };
 
   const quillFormats = [
@@ -126,13 +130,23 @@ const BlogEdit = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
+
     let finalImageBase64 = formData.image;
     if (selectedFile) {
       try {
-        toast({ title: "Uploading Image...", description: "Please wait, uploading image quickly." });
+        toast({
+          title: "Uploading Image...",
+          description: "Please wait, uploading image quickly.",
+        });
         finalImageBase64 = await uploadMediaDirectly(selectedFile);
       } catch (err) {
-        toast({ title: "Error", description: "Failed to upload image.", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: "Failed to upload image.",
+          variant: "destructive",
+        });
+        setSaving(false);
         return;
       }
     }
@@ -140,164 +154,246 @@ const BlogEdit = () => {
     try {
       await axios.put(`${API_URL}/api/blogs/${id}`, {
         ...formData,
-        image: finalImageBase64
+        image: finalImageBase64,
       });
       toast({ title: "✅ Blog Updated", description: "Changes saved!" });
       navigate("/blog-data");
     } catch (err) {
       console.error("Error updating blog:", err);
       toast({ title: "❌ Error", description: "Failed to update blog." });
+    } finally {
+      setSaving(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="p-10 text-center text-green-600">Loading blog...</div>
+      <div className="min-h-screen bg-[#F4F7F2] flex items-center justify-center">
+        <p className="text-[#5B6B64]">Loading blog...</p>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
-      <div className="container mx-auto px-4 py-8">
-        <Link
-          to="/blog-data"
-          className="inline-flex items-center text-green-600 hover:text-green-700 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Blogs
-        </Link>
+    <div className="min-h-screen bg-[#F4F7F2]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+        .font-display { font-family: 'Oswald', sans-serif; }
+        .font-mono-score { font-family: 'JetBrains Mono', monospace; }
+        body, .font-body { font-family: 'Inter', sans-serif; }
 
-        <h1 className="text-3xl font-bold text-green-800 mb-6">
-          Edit Blog Post
-        </h1>
+        .corner-card { position: relative; }
+        .corner-card::before,
+        .corner-card::after {
+          content: "";
+          position: absolute;
+          width: 14px;
+          height: 14px;
+          border-color: #C8FF4D;
+          opacity: 0;
+          transition: opacity 0.15s ease;
+        }
+        .corner-card::before { top: 8px; left: 8px; border-top: 2px solid; border-left: 2px solid; }
+        .corner-card::after { bottom: 8px; right: 8px; border-bottom: 2px solid; border-right: 2px solid; }
+        .corner-card:hover::before, .corner-card:hover::after { opacity: 1; }
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6 bg-white p-8 rounded-xl shadow-lg"
-        >
-          <div>
-            <Label>Title</Label>
-            <Input
-              value={formData.title}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  title: e.target.value,
-                  slug: e.target.value
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/(^-|-$)/g, ""),
-                }))
-              }
-              required
-            />
+        .ql-toolbar.ql-snow { border-color: rgba(0,0,0,0.1); border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; background: #FAFBF9; }
+        .ql-container.ql-snow { border-color: rgba(0,0,0,0.1); border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+      `}</style>
+
+      <header className="sticky top-0 z-20 bg-white border-b border-black/5">
+        <div className="px-4 md:px-8 py-4">
+          <Link
+            to="/blog-data"
+            className="inline-flex items-center gap-1.5 text-sm text-[#5B6B64] hover:text-[#0B1410] transition-colors mb-3"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to blogs
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1B4332]">
+              <FileText className="h-5 w-5 text-[#C8FF4D]" />
+            </div>
+            <div>
+              <h1 className="font-display text-2xl md:text-3xl tracking-wide text-[#0B1410]">
+                Edit blog post
+              </h1>
+              <p className="text-sm text-[#7C8B85]">
+                {formData.title || "Untitled post"}
+              </p>
+            </div>
           </div>
+        </div>
+        <div className="flex items-center justify-between bg-[#0B1410] px-4 md:px-8 py-2 text-[#F4F7F2]">
+          <span className="font-mono-score text-[11px] tracking-widest uppercase text-[#C8FF4D]">
+            Blog · Editing
+          </span>
+          <span className="font-mono-score text-[11px] tracking-widest text-[#7C8B85]">
+            /{formData.slug || "..."}
+          </span>
+        </div>
+      </header>
 
-          <div>
-            <Label>Slug</Label>
-            <Input
-              value={formData.slug}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, slug: e.target.value }))
-              }
-              required
-            />
-          </div>
-
-          <div>
-            <Label>Excerpt</Label>
-            <Textarea
-              value={formData.excerpt}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, excerpt: e.target.value }))
-              }
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="blog-image">Upload Image</Label>
-            <Input
-              id="blog-image"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-            />
-            <p className="mt-1 text-sm text-gray-600">
-              Accepts JPG, PNG, WebP, GIF, SVG, AVIF, and other image formats.
-            </p>
-            {imageName && (
-              <p className="mt-2 text-sm text-green-700">{imageName}</p>
-            )}
-            {previewUrl && (
-              <img
-                src={previewUrl}
-                alt="Selected blog"
-                className="mt-3 h-40 w-full rounded-md object-cover border border-green-100"
-              />
-            )}
-            {!previewUrl && formData.image && (
-              <img
-                src={formData.image}
-                alt="Selected blog"
-                className="mt-3 h-40 w-full rounded-md object-cover border border-green-100"
-              />
-            )}
-          </div>
-
-          <div>
-            <Label>Tags</Label>
-            <div className="flex gap-2 mt-2">
+      <main className="max-w-4xl w-full mx-auto px-4 md:px-8 py-8">
+        <div className="corner-card bg-white rounded-xl border border-black/5 shadow-sm p-6 md:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label className="text-[#0B1410] font-semibold">Title</Label>
               <Input
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && (e.preventDefault(), addTag())
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    title: e.target.value,
+                    slug: e.target.value
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")
+                      .replace(/(^-|-$)/g, ""),
+                  }))
                 }
+                className={inputClass}
+                required
               />
-              <Button type="button" onClick={addTag}>
-                <Plus className="w-4 h-4" />
-              </Button>
             </div>
-            <div className="flex flex-wrap gap-2 mt-3">
-              {formData.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="bg-green-100 px-3 py-1 rounded-full text-green-800 text-sm flex items-center"
+
+            <div>
+              <Label className="text-[#0B1410] font-semibold">Slug</Label>
+              <Input
+                value={formData.slug}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, slug: e.target.value }))
+                }
+                className={`${inputClass} bg-[#F4F7F2] font-mono-score text-sm`}
+                required
+              />
+            </div>
+
+            <div>
+              <Label className="text-[#0B1410] font-semibold">Excerpt</Label>
+              <Textarea
+                value={formData.excerpt}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, excerpt: e.target.value }))
+                }
+                className={inputClass}
+                required
+              />
+            </div>
+
+            <div>
+              <Label
+                htmlFor="blog-image"
+                className="text-[#0B1410] font-semibold"
+              >
+                Upload image
+              </Label>
+              <Input
+                id="blog-image"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className={inputClass}
+              />
+              <p className="mt-1 text-sm text-[#7C8B85]">
+                Accepts JPG, PNG, WebP, GIF, SVG, AVIF, and other image formats.
+              </p>
+              {imageName && (
+                <p className="mt-2 text-sm text-[#1B4332] font-medium">
+                  {imageName}
+                </p>
+              )}
+              {previewUrl && (
+                <img
+                  src={previewUrl}
+                  alt="Selected blog"
+                  className="mt-3 h-40 w-full rounded-lg object-cover border border-black/10"
+                />
+              )}
+              {!previewUrl && formData.image && (
+                <img
+                  src={formData.image}
+                  alt="Selected blog"
+                  className="mt-3 h-40 w-full rounded-lg object-cover border border-black/10"
+                />
+              )}
+            </div>
+
+            <div>
+              <Label className="text-[#0B1410] font-semibold">Tags</Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), addTag())
+                  }
+                  className="border-black/10 focus-visible:ring-[#1B4332] focus-visible:border-[#1B4332]"
+                />
+                <Button
+                  type="button"
+                  onClick={addTag}
+                  className="bg-[#1B4332] hover:bg-[#163828] text-white shrink-0"
                 >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => removeTag(tag)}
-                    className="ml-2 text-red-600"
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {formData.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center bg-[#1B4332]/10 text-[#1B4332] px-3 py-1 rounded-full text-sm font-medium"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="ml-2 text-[#1B4332]/70 hover:text-[#1B4332]"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div>
-            <Label>Content</Label>
-            <div className="mt-2 border-green-200 focus-within:border-green-500 rounded-md">
-              <ReactQuill
-                theme="snow"
-                value={formData.content}
-                onChange={(value) =>
-                  setFormData((prev) => ({ ...prev, content: value }))
-                }
-                modules={quillModules}
-                formats={quillFormats}
-                className="bg-white min-h-[300px] pb-10"
-              />
+            <div>
+              <Label className="text-[#0B1410] font-semibold">Content</Label>
+              <div className="mt-2 rounded-lg">
+                <ReactQuill
+                  theme="snow"
+                  value={formData.content}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, content: value }))
+                  }
+                  modules={quillModules}
+                  formats={quillFormats}
+                  className="bg-white min-h-[300px] pb-10"
+                />
+              </div>
             </div>
-          </div>
 
-          <Button type="submit" className="bg-green-600 hover:bg-green-700">
-            <Save className="w-4 h-4 mr-2" /> Save Changes
-          </Button>
-        </form>
-      </div>
+            <div className="flex gap-3 pt-6 border-t border-black/5">
+              <Button
+                type="submit"
+                disabled={saving}
+                className="gap-1.5 bg-[#1B4332] hover:bg-[#163828] text-white"
+              >
+                <Save className="w-4 h-4" />
+                {saving ? "Saving..." : "Save changes"}
+              </Button>
+              <Link to="/blog-data">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-[#1B4332]/30"
+                >
+                  Cancel
+                </Button>
+              </Link>
+            </div>
+          </form>
+        </div>
+      </main>
     </div>
   );
 };

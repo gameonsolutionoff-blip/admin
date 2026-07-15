@@ -2,41 +2,73 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import axios from "axios";
-import { initializeApp } from "firebase/app";
-import { 
-  getFirestore, 
-  initializeFirestore,
-  collection, 
-  getDocs, 
-  doc, 
-  setDoc, 
-  addDoc, 
-  deleteDoc, 
-  updateDoc,
-  query,
-  where
-} from "firebase/firestore";
+import {
+  initializeApp as initializeAdminApp,
+  cert,
+  getApps,
+} from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
 
-const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyCT6YIG_7ZWH96Sef2YjIsRaWVooyU03gw",
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "gameon-b6644.firebaseapp.com",
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID || "gameon-b6644",
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "gameon-b6644.firebasestorage.app",
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "773390007721",
-  appId: process.env.VITE_FIREBASE_APP_ID || "1:773390007721:web:9372208bb8f9ca0d8958b8"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true
-});
 const port = Number(process.env.PORT || 4000);
+
+// ---------------------------------------------------------------------------
+// Firebase Admin SDK setup. This is the ONLY Firestore access path in this
+// file — the Admin SDK runs with full service-account privileges and
+// bypasses Firestore security rules entirely, which is correct here since
+// this server is the trusted intermediary. Security rules exist to restrict
+// direct client access, not this backend.
+//
+// Requires FIREBASE_SERVICE_ACCOUNT env var containing the full service
+// account JSON as a single-line string. No hardcoded fallback — a missing
+// credential should fail loudly, not silently fall back to something wrong.
+// ---------------------------------------------------------------------------
+const serviceAccountRaw = process.env.VITE_FIREBASE_SERVICE_ACCOUNT;
+
+if (!serviceAccountRaw) {
+  throw new Error(
+    "FIREBASE_SERVICE_ACCOUNT environment variable is not set. " +
+      "Add it to your .env file (single-line JSON string) before starting the server."
+  );
+}
+
+const serviceAccount = JSON.parse(serviceAccountRaw);
+
+if (!getApps().length) {
+  initializeAdminApp({
+    credential: cert(serviceAccount),
+  });
+}
+
+const adminAuth = getAuth();
+const adminDb = getAdminFirestore();
+
+// Verifies the request's Firebase ID token and confirms the caller is a
+// registered admin (present in the "admins" Firestore collection).
+// Returns the verified, lowercased email on success, or null if unauthorized.
+const requireAdmin = async (req) => {
+  const authHeader = req.headers["authorization"] || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token) return null;
+
+  try {
+    const decoded = await adminAuth.verifyIdToken(token);
+    const email = decoded.email?.toLowerCase();
+    if (!email) return null;
+
+    const adminDoc = await adminDb.collection("admins").doc(email).get();
+    return adminDoc.exists ? email : null;
+  } catch (err) {
+    console.error("Token verification failed:", err.message);
+    return null;
+  }
+};
 
 const send = (res, status, body) => {
   res.writeHead(status, {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json",
   });
   res.end(JSON.stringify(body));
@@ -46,38 +78,56 @@ const processBase64Images = async (body, req) => {
   const saveBase64ToHostinger = async (dataUrl) => {
     const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) return dataUrl;
-    
+
     const mimeType = matches[1];
     let ext = mimeType.split("/")[1] || "bin";
     if (ext === "jpeg") ext = "jpg";
-    
-    const filename = `${Date.now()}-${Math.round(Math.random() * 100000)}.${ext}`;
-    
+
+    const filename = `${Date.now()}-${Math.round(
+      Math.random() * 100000
+    )}.${ext}`;
+
     try {
-      const response = await axios.post("https://gameonsolution.gameonsolution.in/upload.php", {
-        secret: "gameon-super-secret-key-123",
-        filename: filename,
-        base64: dataUrl
-      }, {
-        headers: { 
-          "Content-Type": "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      const response = await axios.post(
+        "https://gameonsolution.gameonsolution.in/upload.php",
+        {
+          secret:
+            process.env.UPLOAD_PHP_SECRET || "gameon-super-secret-key-123",
+          filename: filename,
+          base64: dataUrl,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
         }
-      });
-      
+      );
+
       const result = response.data;
       if (result.success) {
         return { url: result.url };
       }
       return { error: "PHP Upload failed: " + JSON.stringify(result) };
     } catch (e) {
-      return { error: "PHP Upload Error: " + (e.response ? e.response.status + " " + JSON.stringify(e.response.data) : e.message) };
+      return {
+        error:
+          "PHP Upload Error: " +
+          (e.response
+            ? e.response.status + " " + JSON.stringify(e.response.data)
+            : e.message),
+      };
     }
   };
 
   const fieldsToCheck = ["image", "imageUrl", "mediaUrl"];
   for (const field of fieldsToCheck) {
-    if (body[field] && typeof body[field] === "string" && body[field].startsWith("data:")) {
+    if (
+      body[field] &&
+      typeof body[field] === "string" &&
+      body[field].startsWith("data:")
+    ) {
       const res = await saveBase64ToHostinger(body[field]);
       if (res.url) {
         body[field] = res.url;
@@ -99,19 +149,31 @@ const processBase64Images = async (body, req) => {
   };
 
   const imgRegex = /src="data:([A-Za-z-+\/]+);base64,([^"]+)"/g;
-  
+
   if (body.content && typeof body.content === "string") {
-    body.content = await asyncReplaceAll(body.content, imgRegex, async (match) => {
-      const url = await saveBase64ToHostinger(`data:${match[1]};base64,${match[2]}`);
-      return `src="${url}"`;
-    });
+    body.content = await asyncReplaceAll(
+      body.content,
+      imgRegex,
+      async (match) => {
+        const url = await saveBase64ToHostinger(
+          `data:${match[1]};base64,${match[2]}`
+        );
+        return `src="${url}"`;
+      }
+    );
   }
-  
+
   if (body.details && typeof body.details === "string") {
-    body.details = await asyncReplaceAll(body.details, imgRegex, async (match) => {
-      const url = await saveBase64ToHostinger(`data:${match[1]};base64,${match[2]}`);
-      return `src="${url}"`;
-    });
+    body.details = await asyncReplaceAll(
+      body.details,
+      imgRegex,
+      async (match) => {
+        const url = await saveBase64ToHostinger(
+          `data:${match[1]};base64,${match[2]}`
+        );
+        return `src="${url}"`;
+      }
+    );
   }
 
   return body;
@@ -141,13 +203,33 @@ const readJsonBody = (req) =>
   });
 
 const sortNewest = (items) =>
-  [...items].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  [...items].sort(
+    (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+  );
 
+// All Firestore reads now go through the Admin SDK, bypassing security rules.
 const getAllDocs = async (collName) => {
-  const querySnapshot = await getDocs(collection(db, collName));
+  const snapshot = await adminDb.collection(collName).get();
   const docs = [];
-  querySnapshot.forEach((doc) => docs.push({ id: doc.id, ...doc.data() }));
+  snapshot.forEach((doc) => docs.push({ id: doc.id, ...doc.data() }));
   return sortNewest(docs);
+};
+
+const addDocAdmin = async (collName, data) => {
+  const docRef = await adminDb.collection(collName).add(data);
+  return docRef.id;
+};
+
+const setDocAdmin = async (collName, id, data) => {
+  await adminDb.collection(collName).doc(id).set(data);
+};
+
+const updateDocAdmin = async (collName, id, data) => {
+  await adminDb.collection(collName).doc(id).update(data);
+};
+
+const deleteDocAdmin = async (collName, id) => {
+  await adminDb.collection(collName).doc(id).delete();
 };
 
 // Legacy support mappings
@@ -179,12 +261,16 @@ const handleLegacyV1 = async (req, res, segments) => {
     return true;
   }
 
-  if ((resource === "newsfeed" || resource === "newsfeeds") && req.method === "GET") {
+  if (
+    (resource === "newsfeed" || resource === "newsfeeds") &&
+    req.method === "GET"
+  ) {
     const data = await getAllDocs("newsFeeds");
     send(res, 200, data.map(toLegacyNewsFeed));
     return true;
   }
 
+  // Public contact form submission — stays open, no auth required.
   if (resource === "contacts" && req.method === "POST") {
     const body = await readJsonBody(req);
     if (!body.name || !body.email || !body.message) {
@@ -196,8 +282,8 @@ const handleLegacyV1 = async (req, res, segments) => {
       createdAt: new Date().toISOString(),
       updatedAt: null,
     };
-    const docRef = await addDoc(collection(db, "contacts"), contact);
-    send(res, 200, { id: docRef.id, ...contact });
+    const id = await addDocAdmin("contacts", contact);
+    send(res, 200, { id, ...contact });
     return true;
   }
 
@@ -210,6 +296,9 @@ const handleLegacyV1 = async (req, res, segments) => {
   return false;
 };
 
+// Generic collection handler used for testimonials, news-feeds, awards, contacts.
+// `publicCreate: true` allows POST without admin auth (used only for contacts,
+// since the public site's contact form must be able to submit without login).
 const handleCollection = async (req, res, segments, config) => {
   const id = segments[2];
 
@@ -230,22 +319,39 @@ const handleCollection = async (req, res, segments, config) => {
     return;
   }
 
+  const isPublicCreate = req.method === "POST" && config.publicCreate;
+
+  if (!isPublicCreate && ["POST", "PUT", "DELETE"].includes(req.method)) {
+    const adminEmail = await requireAdmin(req);
+    if (!adminEmail) {
+      send(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+  }
+
   if (req.method === "POST") {
     const body = await readJsonBody(req);
     const missing = config.required.filter((field) => !body[field]);
     if (missing.length) {
-      send(res, 400, { success: false, message: `Missing (${missing.join(", ")})` });
+      send(res, 400, {
+        success: false,
+        message: `Missing (${missing.join(", ")})`,
+      });
       return;
     }
-    const item = { ...body, createdAt: new Date().toISOString(), updatedAt: null };
-    const docRef = await addDoc(collection(db, config.key), item);
-    send(res, 200, { success: true, id: docRef.id });
+    const item = {
+      ...body,
+      createdAt: new Date().toISOString(),
+      updatedAt: null,
+    };
+    const newId = await addDocAdmin(config.key, item);
+    send(res, 200, { success: true, id: newId });
     return;
   }
 
   if (req.method === "PUT" && id) {
     const body = await readJsonBody(req);
-    await updateDoc(doc(db, config.key, id), {
+    await updateDocAdmin(config.key, id, {
       ...body,
       updatedAt: new Date().toISOString(),
     });
@@ -254,7 +360,7 @@ const handleCollection = async (req, res, segments, config) => {
   }
 
   if (req.method === "DELETE" && id) {
-    await deleteDoc(doc(db, config.key, id));
+    await deleteDocAdmin(config.key, id);
     send(res, 200, { success: true, message: `${config.label} deleted` });
     return;
   }
@@ -273,13 +379,23 @@ const handleBlogs = async (req, res, segments) => {
 
   if (req.method === "GET" && idOrSlug) {
     let blogs = await getAllDocs("blogs");
-    const blog = blogs.find(item => item.id === idOrSlug || item.slug === idOrSlug);
+    const blog = blogs.find(
+      (item) => item.id === idOrSlug || item.slug === idOrSlug
+    );
     if (!blog) {
       send(res, 404, { success: false, message: "Blog not found" });
       return;
     }
     send(res, 200, { success: true, blog });
     return;
+  }
+
+  if (["POST", "PUT", "DELETE"].includes(req.method)) {
+    const adminEmail = await requireAdmin(req);
+    if (!adminEmail) {
+      send(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
   }
 
   if (req.method === "POST") {
@@ -303,14 +419,14 @@ const handleBlogs = async (req, res, segments) => {
       createdAt: new Date().toISOString(),
       updatedAt: null,
     };
-    const docRef = await addDoc(collection(db, "blogs"), blog);
-    send(res, 200, { success: true, id: docRef.id });
+    const newId = await addDocAdmin("blogs", blog);
+    send(res, 200, { success: true, id: newId });
     return;
   }
 
   if (req.method === "PUT" && idOrSlug) {
     const body = await readJsonBody(req);
-    await updateDoc(doc(db, "blogs", idOrSlug), {
+    await updateDocAdmin("blogs", idOrSlug, {
       ...body,
       tags: Array.isArray(body.tags) ? body.tags : [],
       updatedAt: new Date().toISOString(),
@@ -320,7 +436,7 @@ const handleBlogs = async (req, res, segments) => {
   }
 
   if (req.method === "DELETE" && idOrSlug) {
-    await deleteDoc(doc(db, "blogs", idOrSlug));
+    await deleteDocAdmin("blogs", idOrSlug);
     send(res, 200, { success: true, message: "Blog deleted" });
     return;
   }
@@ -339,13 +455,16 @@ const handleProjects = async (req, res, segments) => {
 
   if (req.method === "GET" && !id) {
     const projects = await getAllDocs("projects");
-    send(res, 200, { success: true, projects: projects.map(toProjectResponse) });
+    send(res, 200, {
+      success: true,
+      projects: projects.map(toProjectResponse),
+    });
     return;
   }
 
   if (req.method === "GET" && id) {
     const projects = await getAllDocs("projects");
-    const project = projects.find(item => item.id === id);
+    const project = projects.find((item) => item.id === id);
     if (!project) {
       send(res, 404, { success: false, message: "Project not found" });
       return;
@@ -354,9 +473,22 @@ const handleProjects = async (req, res, segments) => {
     return;
   }
 
+  if (["POST", "PUT", "DELETE"].includes(req.method)) {
+    const adminEmail = await requireAdmin(req);
+    if (!adminEmail) {
+      send(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+  }
+
   if (req.method === "POST") {
     const body = await readJsonBody(req);
-    if (!body.imageUrl || !body.title || !body.location || !body.shortDescription) {
+    if (
+      !body.imageUrl ||
+      !body.title ||
+      !body.location ||
+      !body.shortDescription
+    ) {
       send(res, 400, { success: false, message: "Missing required fields" });
       return;
     }
@@ -373,25 +505,76 @@ const handleProjects = async (req, res, segments) => {
     if (body.debugError) {
       project.debugError = body.debugError;
     }
-    const docRef = await addDoc(collection(db, "projects"), project);
-    send(res, 200, { success: true, id: docRef.id });
+    const newId = await addDocAdmin("projects", project);
+    send(res, 200, { success: true, id: newId });
     return;
   }
 
   if (req.method === "PUT" && id) {
     const body = await readJsonBody(req);
-    await updateDoc(doc(db, "projects", id), {
+    const updatePayload = {
       ...body,
-      mediaUrl: body.imageUrl || undefined,
       updatedAt: new Date().toISOString(),
-    });
+    };
+    if (body.imageUrl) {
+      updatePayload.mediaUrl = body.imageUrl;
+    }
+    await updateDocAdmin("projects", id, updatePayload);
     send(res, 200, { success: true, message: "Project updated" });
     return;
   }
 
   if (req.method === "DELETE" && id) {
-    await deleteDoc(doc(db, "projects", id));
+    await deleteDocAdmin("projects", id);
     send(res, 200, { success: true, message: "Project deleted" });
+    return;
+  }
+
+  send(res, 405, { success: false, message: "Method not allowed" });
+};
+
+// Manage the "admins" collection. All operations require the caller to
+// already be a verified admin — there is no public write path here at all.
+const handleAdmins = async (req, res, segments) => {
+  const targetEmail = segments[2]
+    ? decodeURIComponent(segments[2]).toLowerCase()
+    : null;
+
+  const callerEmail = await requireAdmin(req);
+  if (!callerEmail) {
+    send(res, 401, { success: false, message: "Unauthorized" });
+    return;
+  }
+
+  if (req.method === "GET") {
+    const snapshot = await adminDb.collection("admins").get();
+    const admins = snapshot.docs.map((d) => ({ email: d.id, ...d.data() }));
+    send(res, 200, { success: true, admins });
+    return;
+  }
+
+  if (req.method === "POST") {
+    const body = await readJsonBody(req);
+    const email = (body.email || "").toLowerCase().trim();
+    if (!email || !email.includes("@")) {
+      send(res, 400, { success: false, message: "Valid email required" });
+      return;
+    }
+    await setDocAdmin("admins", email, {
+      addedBy: callerEmail,
+      addedAt: new Date().toISOString(),
+    });
+    send(res, 200, { success: true, message: `${email} added as admin` });
+    return;
+  }
+
+  if (req.method === "DELETE" && targetEmail) {
+    if (targetEmail === callerEmail) {
+      send(res, 400, { success: false, message: "You can't remove yourself" });
+      return;
+    }
+    await deleteDocAdmin("admins", targetEmail);
+    send(res, 200, { success: true, message: `${targetEmail} removed` });
     return;
   }
 
@@ -417,10 +600,10 @@ const server = http.createServer(async (req, res) => {
         else if (ext === ".gif") contentType = "image/gif";
         else if (ext === ".webp") contentType = "image/webp";
         else if (ext === ".mp4") contentType = "video/mp4";
-        
+
         res.writeHead(200, {
-           "Content-Type": contentType,
-           "Access-Control-Allow-Origin": "*"
+          "Content-Type": contentType,
+          "Access-Control-Allow-Origin": "*",
         });
         fs.createReadStream(filePath).pipe(res);
         return;
@@ -445,39 +628,56 @@ const server = http.createServer(async (req, res) => {
     }
     if (segments[0] === "api" && segments[1] === "testimonials") {
       await handleCollection(req, res, segments, {
-        key: "testimonials", singleKey: "testimonial", label: "Testimonial",
+        key: "testimonials",
+        singleKey: "testimonial",
+        label: "Testimonial",
         required: ["name", "feedback", "mediaUrl", "mediaType"],
       });
       return;
     }
     if (segments[0] === "api" && segments[1] === "news-feeds") {
       await handleCollection(req, res, segments, {
-        key: "newsFeeds", singleKey: "newsFeed", label: "News feed",
+        key: "newsFeeds",
+        singleKey: "newsFeed",
+        label: "News feed",
         required: ["title", "imageUrl", "details"],
       });
       return;
     }
     if (segments[0] === "api" && segments[1] === "contacts") {
+      // Contact form creation stays public; updates/deletes require admin.
       await handleCollection(req, res, segments, {
-        key: "contacts", singleKey: "contact", label: "Contact",
+        key: "contacts",
+        singleKey: "contact",
+        label: "Contact",
         required: ["name", "email", "message"],
+        publicCreate: true,
       });
       return;
     }
     if (segments[0] === "api" && segments[1] === "awards") {
       await handleCollection(req, res, segments, {
-        key: "awards", singleKey: "award", label: "Award",
+        key: "awards",
+        singleKey: "award",
+        label: "Award",
         required: ["title", "imageUrl", "date"],
       });
+      return;
+    }
+    if (segments[0] === "api" && segments[1] === "admins") {
+      await handleAdmins(req, res, segments);
       return;
     }
     send(res, 404, { success: false, message: "Route not found" });
   } catch (error) {
     console.error(error);
-    send(res, 500, { success: false, message: error.message || "Server error" });
+    send(res, 500, {
+      success: false,
+      message: error.message || "Server error",
+    });
   }
 });
 
 server.listen(port, () => {
-  console.log(`Firebase API running on http://localhost:${port}`);
+  console.log(`Firebase API (Admin SDK) running on http://localhost:${port}`);
 });

@@ -1,360 +1,15 @@
-// import { useEffect, useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { Button } from "@/components/ui/button";
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { ArrowLeft, Image, MapPin, Trash2, Pencil } from "lucide-react";
-// import { useToast } from "@/hooks/use-toast";
-
-// interface Project {
-//   id: string;
-//   imageUrl: string;
-//   title: string;
-//   location: string;
-//   shortDescription: string;
-//   createdAt: string;
-// }
-
-// const ProjectsData = () => {
-//   const navigate = useNavigate();
-//   const { toast } = useToast();
-//   const [projects, setProjects] = useState<Project[]>([]);
-
-//   useEffect(() => {
-//     const loadProjects = () => {
-//       const storedProjects = localStorage.getItem("projects");
-//       if (storedProjects) {
-//         setProjects(JSON.parse(storedProjects));
-//       }
-//     };
-//     loadProjects();
-//   }, []);
-
-//   const handleDelete = (id: string) => {
-//     const updatedProjects = projects.filter((project) => project.id !== id);
-//     localStorage.setItem("projects", JSON.stringify(updatedProjects));
-//     setProjects(updatedProjects);
-//     toast({
-//       title: "Deleted",
-//       description: "Project has been removed",
-//     });
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4">
-//       <div className="max-w-7xl mx-auto py-8">
-//         <div className="flex justify-between items-center mb-6">
-//           <Button
-//             variant="outline"
-//             onClick={() => navigate("/")}
-//             className="border-green-600 text-green-600 hover:bg-green-50"
-//           >
-//             <ArrowLeft className="mr-2 h-4 w-4" />
-//             Back to Dashboard
-//           </Button>
-//           <Button
-//             onClick={() => navigate("/projects-admin")}
-//             className="bg-green-600 hover:bg-green-700"
-//           >
-//             Add New Project
-//           </Button>
-//         </div>
-
-//         <Card className="border-2 border-green-200">
-//           <CardHeader className="bg-green-600 text-white">
-//             <CardTitle className="text-2xl flex items-center">
-//               <Image className="mr-2" />
-//               All Projects ({projects.length})
-//             </CardTitle>
-//           </CardHeader>
-//           <CardContent className="pt-6">
-//             {projects.length === 0 ? (
-//               <div className="text-center py-12 text-gray-500">
-//                 <Image className="mx-auto h-12 w-12 mb-4 opacity-50" />
-//                 <p className="text-lg font-medium">No projects yet</p>
-//                 <p className="text-sm">
-//                   Add your first project to get started
-//                 </p>
-//               </div>
-//             ) : (
-//               <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-//                 {projects.map((project) => (
-//                   <Card
-//                     key={project.id}
-//                     className="overflow-hidden border-green-200 hover:border-green-400 transition-colors flex flex-col"
-//                   >
-//                     <div className="aspect-video bg-gray-200 relative">
-//                       <img
-//                         src={project.imageUrl}
-//                         alt={project.title}
-//                         className="w-full h-full object-cover"
-//                         onError={(e) => {
-//                           (e.target as HTMLImageElement).src =
-//                             "/placeholder.svg";
-//                         }}
-//                       />
-//                     </div>
-//                     <CardContent className="p-4 flex flex-col flex-grow">
-//                       <h3 className="font-bold text-lg text-green-800 mb-2 line-clamp-2">
-//                         {project.title}
-//                       </h3>
-//                       <div className="flex items-start mb-3 text-sm text-gray-600">
-//                         <MapPin className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
-//                         <span className="line-clamp-1">{project.location}</span>
-//                       </div>
-//                       <p className="text-sm text-gray-700 mb-4 line-clamp-3 flex-grow">
-//                         {project.shortDescription}
-//                       </p>
-//                       <div className="flex items-center justify-between text-xs text-gray-500 gap-2">
-//                         <span className="truncate">
-//                           {new Date(project.createdAt).toLocaleDateString()}
-//                         </span>
-//                         <div className="flex gap-2 flex-shrink-0">
-//                           <Button
-//                             variant="outline"
-//                             size="sm"
-//                             onClick={() => navigate(`/projects-edit/${project.id}`)}
-//                             className="border-green-600 text-green-600 hover:bg-green-50"
-//                           >
-//                             <Pencil className="h-3 w-3" />
-//                           </Button>
-//                           <Button
-//                             variant="destructive"
-//                             size="sm"
-//                             onClick={() => handleDelete(project.id)}
-//                           >
-//                             <Trash2 className="h-3 w-3" />
-//                           </Button>
-//                         </div>
-//                       </div>
-//                     </CardContent>
-//                   </Card>
-//                 ))}
-//               </div>
-//             )}
-//           </CardContent>
-//         </Card>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default ProjectsData;
-
-// import { useEffect, useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { Button } from "@/components/ui/button";
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import {
-//   ArrowLeft,
-//   Image as ImgIcon,
-//   MapPin,
-//   Trash2,
-//   Pencil,
-// } from "lucide-react";
-// import { useToast } from "@/hooks/use-toast";
-
-// interface Project {
-//   id: string;
-//   imageUrl: string;
-//   title: string;
-//   location: string;
-//   shortDescription: string;
-//   createdAt: string;
-// }
-
-// const loadProjects = (): Project[] => {
-//   try {
-//     const raw = localStorage.getItem("projects");
-//     if (!raw) return [];
-//     const parsed = JSON.parse(raw);
-//     if (!Array.isArray(parsed)) return [];
-//     return parsed;
-//   } catch (e) {
-//     console.error("Failed to load projects", e);
-//     return [];
-//   }
-// };
-
-// const saveProjects = (projects: Project[]) => {
-//   try {
-//     localStorage.setItem("projects", JSON.stringify(projects));
-//   } catch (e) {
-//     console.error("Failed to save projects", e);
-//     throw e;
-//   }
-// };
-
-// const ProjectsData = (): JSX.Element => {
-//   const navigate = useNavigate();
-//   const { toast } = useToast();
-//   const [projects, setProjects] = useState<Project[]>([]);
-
-//   useEffect(() => {
-//     setProjects(loadProjects());
-//   }, []);
-
-//   const handleDelete = (id: string) => {
-//     const ok = window.confirm("Are you sure you want to delete this project?");
-//     if (!ok) return;
-
-//     const updated = projects.filter((p) => p.id !== id);
-//     try {
-//       saveProjects(updated);
-//       setProjects(updated);
-//       toast({
-//         title: "Deleted",
-//         description: "Project has been removed",
-//       });
-//     } catch {
-//       toast({
-//         title: "Delete Failed",
-//         description: "Could not delete project. See console.",
-//         variant: "destructive",
-//       });
-//     }
-//   };
-
-//   const handleImageError = (
-//     e: React.SyntheticEvent<HTMLImageElement, Event>
-//   ) => {
-//     (e.target as HTMLImageElement).src = "/placeholder.svg";
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4">
-//       <div className="max-w-7xl mx-auto py-8">
-//         <div className="flex justify-between items-center mb-6">
-//           <Button
-//             variant="outline"
-//             onClick={() => navigate("/")}
-//             className="border-green-600 text-green-600 hover:bg-green-50"
-//             aria-label="Back to dashboard"
-//           >
-//             <ArrowLeft className="mr-2 h-4 w-4" />
-//             Back to Dashboard
-//           </Button>
-
-//           <div className="flex gap-2">
-//             <Button
-//               onClick={() => navigate("/projects-admin")}
-//               className="bg-green-600 hover:bg-green-700"
-//               aria-label="Add new project"
-//             >
-//               Add New Project
-//             </Button>
-//             <Button
-//               variant="outline"
-//               onClick={() => {
-//                 setProjects(loadProjects());
-//                 toast({
-//                   title: "Refreshed",
-//                   description: "Projects reloaded from storage.",
-//                 });
-//               }}
-//             >
-//               Refresh
-//             </Button>
-//           </div>
-//         </div>
-
-//         <Card className="border-2 border-green-200">
-//           <CardHeader className="bg-green-600 text-white">
-//             <CardTitle className="text-2xl flex items-center">
-//               <ImgIcon className="mr-2" />
-//               All Projects ({projects.length})
-//             </CardTitle>
-//           </CardHeader>
-
-//           <CardContent className="pt-6">
-//             {projects.length === 0 ? (
-//               <div className="text-center py-12 text-gray-500">
-//                 <ImgIcon className="mx-auto h-12 w-12 mb-4 opacity-50" />
-//                 <p className="text-lg font-medium">No projects yet</p>
-//                 <p className="text-sm">Add your first project to get started</p>
-//               </div>
-//             ) : (
-//               <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-//                 {projects.map((project) => (
-//                   <Card
-//                     key={project.id}
-//                     className="overflow-hidden border-green-200 hover:border-green-400 transition-colors flex flex-col"
-//                   >
-//                     <div className="aspect-video bg-gray-200 relative">
-//                       <img
-//                         src={project.imageUrl}
-//                         alt={project.title}
-//                         className="w-full h-full object-cover"
-//                         onError={handleImageError}
-//                       />
-//                     </div>
-
-//                     <CardContent className="p-4 flex flex-col flex-grow">
-//                       <h3 className="font-bold text-lg text-green-800 mb-2 line-clamp-2">
-//                         {project.title}
-//                       </h3>
-
-//                       <div className="flex items-start mb-3 text-sm text-gray-600">
-//                         <MapPin className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
-//                         <span className="line-clamp-1">{project.location}</span>
-//                       </div>
-
-//                       <p className="text-sm text-gray-700 mb-4 line-clamp-3 flex-grow">
-//                         {project.shortDescription}
-//                       </p>
-
-//                       <div className="flex items-center justify-between text-xs text-gray-500 gap-2">
-//                         <span className="truncate">
-//                           {new Date(project.createdAt).toLocaleDateString()}
-//                         </span>
-
-//                         <div className="flex gap-2 flex-shrink-0">
-//                           <Button
-//                             variant="outline"
-//                             size="sm"
-//                             onClick={() =>
-//                               navigate(`/projects-edit/${project.id}`)
-//                             }
-//                             className="border-green-600 text-green-600 hover:bg-green-50"
-//                             aria-label={`Edit ${project.title}`}
-//                           >
-//                             <Pencil className="h-3 w-3" />
-//                           </Button>
-
-//                           <Button
-//                             variant="destructive"
-//                             size="sm"
-//                             onClick={() => handleDelete(project.id)}
-//                             aria-label={`Delete ${project.title}`}
-//                           >
-//                             <Trash2 className="h-3 w-3" />
-//                           </Button>
-//                         </div>
-//                       </div>
-//                     </CardContent>
-//                   </Card>
-//                 ))}
-//               </div>
-//             )}
-//           </CardContent>
-//         </Card>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default ProjectsData;
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowLeft,
-  Image as ImgIcon,
+  Building2,
   MapPin,
   Trash2,
   Pencil,
+  RefreshCw,
+  Plus,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/lib/api";
@@ -447,120 +102,177 @@ const ProjectsData = (): JSX.Element => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4">
-      <div className="max-w-7xl mx-auto py-8">
-        <div className="flex justify-between items-center mb-6">
-          <Button
-            variant="outline"
-            onClick={() => navigate("/")}
-            className="border-green-600 text-green-600 hover:bg-green-50"
-            aria-label="Back to dashboard"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
+    <div className="min-h-screen bg-[#F4F7F2]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+        .font-display { font-family: 'Oswald', sans-serif; }
+        .font-mono-score { font-family: 'JetBrains Mono', monospace; }
+        body, .font-body { font-family: 'Inter', sans-serif; }
 
-          <div className="flex gap-2">
-            <Button
-              onClick={() => navigate("/projects-admin")}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Add New Project
-            </Button>
-            <Button variant="outline" onClick={fetchProjects}>
-              Refresh
-            </Button>
+        .corner-card { position: relative; }
+        .corner-card::before,
+        .corner-card::after {
+          content: "";
+          position: absolute;
+          width: 14px;
+          height: 14px;
+          border-color: #C8FF4D;
+          opacity: 0;
+          transition: opacity 0.15s ease;
+        }
+        .corner-card::before { top: 8px; left: 8px; border-top: 2px solid; border-left: 2px solid; }
+        .corner-card::after { bottom: 8px; right: 8px; border-bottom: 2px solid; border-right: 2px solid; }
+        .corner-card:hover::before, .corner-card:hover::after { opacity: 1; }
+
+        @keyframes pulse-dot {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
+        }
+        .live-dot { animation: pulse-dot 2s ease-in-out infinite; }
+      `}</style>
+
+      <header className="sticky top-0 z-20 bg-white border-b border-black/5">
+        <div className="px-4 md:px-8 py-4">
+          <button
+            onClick={() => navigate("/")}
+            className="inline-flex items-center gap-1.5 text-sm text-[#5B6B64] hover:text-[#0B1410] transition-colors mb-3"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to dashboard
+          </button>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1B4332]">
+                <Building2 className="h-5 w-5 text-[#C8FF4D]" />
+              </div>
+              <div>
+                <h1 className="font-display text-2xl md:text-3xl tracking-wide text-[#0B1410]">
+                  Projects
+                </h1>
+                <p className="text-sm text-[#7C8B85]">
+                  Manage finished courts and facilities
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="gap-1.5 border-[#1B4332]/30"
+                onClick={fetchProjects}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+              <Button
+                onClick={() => navigate("/projects-admin")}
+                className="gap-1.5 bg-[#1B4332] hover:bg-[#163828] text-white"
+              >
+                <Plus className="h-4 w-4" />
+                New project
+              </Button>
+            </div>
           </div>
         </div>
+        <div className="flex items-center justify-between bg-[#0B1410] px-4 md:px-8 py-2 text-[#F4F7F2]">
+          <div className="flex items-center gap-2">
+            <span className="live-dot h-2 w-2 rounded-full bg-[#C8FF4D]" />
+            <span className="font-mono-score text-[11px] tracking-widest uppercase text-[#C8FF4D]">
+              Projects · {projects.length}{" "}
+              {projects.length === 1 ? "entry" : "entries"}
+            </span>
+          </div>
+        </div>
+      </header>
 
-        <Card className="border-2 border-green-200">
-          <CardHeader className="bg-green-600 text-white">
-            <CardTitle className="text-2xl flex items-center">
-              <ImgIcon className="mr-2" />
-              All Projects ({projects.length})
-            </CardTitle>
-          </CardHeader>
+      <main className="max-w-6xl w-full mx-auto px-4 md:px-8 py-8">
+        {loading ? (
+          <div className="corner-card bg-white rounded-xl border border-black/5 shadow-sm p-12 text-center">
+            <p className="text-[#5B6B64]">Loading projects...</p>
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="corner-card bg-white rounded-xl border border-black/5 shadow-sm p-12 text-center">
+            <div className="w-16 h-16 bg-[#1B4332] rounded-lg flex items-center justify-center mx-auto mb-4">
+              <Building2 className="w-8 h-8 text-[#C8FF4D]" />
+            </div>
+            <h3 className="font-display text-xl tracking-wide text-[#0B1410] mb-2">
+              No projects yet
+            </h3>
+            <p className="text-[#7C8B85] mb-6">
+              Add your first project to get started.
+            </p>
+            <Button
+              onClick={() => navigate("/projects-admin")}
+              className="bg-[#1B4332] hover:bg-[#163828] text-white"
+            >
+              Add new project
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => (
+              <div
+                key={project.id}
+                className="corner-card bg-white rounded-xl border border-black/5 shadow-sm overflow-hidden flex flex-col"
+              >
+                <div className="aspect-video bg-[#F4F7F2] relative">
+                  <img
+                    src={project.imageUrl}
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                    onError={handleImageError}
+                  />
+                </div>
 
-          <CardContent className="pt-6">
-            {loading ? (
-              <div className="text-center py-12 text-green-600">
-                Loading projects...
-              </div>
-            ) : projects.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <ImgIcon className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                <p className="text-lg font-medium">No projects yet</p>
-                <p className="text-sm">Add your first project to get started</p>
-              </div>
-            ) : (
-              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {projects.map((project) => (
-                  <Card
-                    key={project.id}
-                    className="overflow-hidden border-green-200 hover:border-green-400 transition-colors flex flex-col"
-                  >
-                    <div className="aspect-video bg-gray-200 relative">
-                      <img
-                        src={project.imageUrl}
-                        alt={project.title}
-                        className="w-full h-full object-cover"
-                        onError={handleImageError}
-                      />
+                <div className="p-5 flex flex-col flex-grow">
+                  <h3 className="font-display text-lg tracking-wide text-[#0B1410] mb-2 line-clamp-2">
+                    {project.title}
+                  </h3>
+
+                  <div className="flex items-start gap-1.5 mb-3 text-sm text-[#7C8B85]">
+                    <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-[#1B4332]" />
+                    <span className="line-clamp-1">{project.location}</span>
+                  </div>
+
+                  <p className="text-sm text-[#5B6B64] leading-relaxed mb-4 line-clamp-3 flex-grow">
+                    {project.shortDescription}
+                  </p>
+
+                  <div className="flex items-center justify-between gap-2 text-xs text-[#7C8B85] pt-3 border-t border-black/5">
+                    <span className="font-mono-score truncate">
+                      {project.createdAt
+                        ? new Date(project.createdAt).toLocaleDateString()
+                        : "Unknown date"}
+                    </span>
+
+                    <div className="flex gap-2 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/projects-edit/${project.id}`)}
+                        className="border-[#1B4332]/30 text-[#1B4332] hover:bg-[#1B4332]/5"
+                        aria-label={`Edit ${project.title}`}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(project.id)}
+                        disabled={deletingId === project.id}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        aria-label={`Delete ${project.title}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-
-                    <CardContent className="p-4 flex flex-col flex-grow">
-                      <h3 className="font-bold text-lg text-green-800 mb-2 line-clamp-2">
-                        {project.title}
-                      </h3>
-
-                      <div className="flex items-start mb-3 text-sm text-gray-600">
-                        <MapPin className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" />
-                        <span className="line-clamp-1">{project.location}</span>
-                      </div>
-
-                      <p className="text-sm text-gray-700 mb-4 line-clamp-3 flex-grow">
-                        {project.shortDescription}
-                      </p>
-
-                      <div className="flex items-center justify-between text-xs text-gray-500 gap-2">
-                        <span className="truncate">
-                          {project.createdAt
-                            ? new Date(project.createdAt).toLocaleDateString()
-                            : "Unknown date"}
-                        </span>
-
-                        <div className="flex gap-2 flex-shrink-0">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              navigate(`/projects-edit/${project.id}`)
-                            }
-                            className="border-green-600 text-green-600 hover:bg-green-50"
-                            aria-label={`Edit ${project.title}`}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(project.id)}
-                            disabled={deletingId === project.id}
-                            aria-label={`Delete ${project.title}`}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                  </div>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 };

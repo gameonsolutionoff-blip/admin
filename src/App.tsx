@@ -20,6 +20,10 @@ import NewsEdit from "./pages/NewsEdit";
 import ContactResponses from "./pages/ContactResponses";
 import AwardsAdmin from "./pages/AwardsAdmin";
 import AwardsData from "./pages/AwardsData";
+import { AuthProvider } from "./hooks/useAuth";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import Login from "./pages/Login";
+import AdminUsers from "./pages/AdminUsers";
 
 const queryClient = new QueryClient();
 
@@ -29,26 +33,150 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/blog-admin" element={<BlogAdmin />} />
-          <Route path="/blog-data" element={<BlogData />} />
-          <Route path="/blog-edit/:id" element={<BlogEdit />} />
-          <Route path="/projects-admin" element={<ProjectsAdmin />} />
-          <Route path="/projects-data" element={<ProjectsData />} />
-          <Route path="/projects-edit/:id" element={<ProjectsEdit />} />
-          <Route path="/testimonials-admin" element={<TestimonialsAdmin />} />
-          <Route path="/testimonials-data" element={<TestimonialsData />} />
-          <Route path="/testimonials-edit/:id" element={<TestimonialsEdit />} />
-          <Route path="/news-admin" element={<NewsAdmin />} />
-          <Route path="/news-data" element={<NewsData />} />
-          <Route path="/news-edit/:id" element={<NewsEdit />} />
-          <Route path="/contact-responses" element={<ContactResponses />} />
-          <Route path="/awards-admin" element={<AwardsAdmin />} />
-          <Route path="/awards-data" element={<AwardsData />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/blog-admin"
+              element={
+                <ProtectedRoute>
+                  <BlogAdmin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/blog-data"
+              element={
+                <ProtectedRoute>
+                  <BlogData />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/blog-edit/:id"
+              element={
+                <ProtectedRoute>
+                  <BlogEdit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects-admin"
+              element={
+                <ProtectedRoute>
+                  <ProjectsAdmin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects-data"
+              element={
+                <ProtectedRoute>
+                  <ProjectsData />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects-edit/:id"
+              element={
+                <ProtectedRoute>
+                  <ProjectsEdit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/testimonials-admin"
+              element={
+                <ProtectedRoute>
+                  <TestimonialsAdmin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/testimonials-data"
+              element={
+                <ProtectedRoute>
+                  <TestimonialsData />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/testimonials-edit/:id"
+              element={
+                <ProtectedRoute>
+                  <TestimonialsEdit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/news-admin"
+              element={
+                <ProtectedRoute>
+                  <NewsAdmin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/news-data"
+              element={
+                <ProtectedRoute>
+                  <NewsData />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/news-edit/:id"
+              element={
+                <ProtectedRoute>
+                  <NewsEdit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/contact-responses"
+              element={
+                <ProtectedRoute>
+                  <ContactResponses />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/awards-admin"
+              element={
+                <ProtectedRoute>
+                  <AwardsAdmin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/awards-data"
+              element={
+                <ProtectedRoute>
+                  <AwardsData />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-users"
+              element={
+                <ProtectedRoute>
+                  <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

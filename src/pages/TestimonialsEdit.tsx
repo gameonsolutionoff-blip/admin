@@ -3,13 +3,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { ArrowLeft, Save, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/lib/api";
-import { mediaFileToDataUrl, uploadMediaDirectly } from "@/lib/imageUpload";
+import { uploadMediaDirectly } from "@/lib/imageUpload";
+
+const inputClass =
+  "border-black/10 focus-visible:ring-[#1B4332] focus-visible:border-[#1B4332]";
 
 const TestimonialsEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -75,10 +77,19 @@ const TestimonialsEdit = () => {
     let finalMediaUrl = formData.mediaUrl;
     if (selectedFile) {
       try {
-        toast({ title: "Uploading Media...", description: "Please wait, uploading file quickly." });
+        toast({
+          title: "Uploading Media...",
+          description: "Please wait, uploading file quickly.",
+        });
         finalMediaUrl = await uploadMediaDirectly(selectedFile);
       } catch (err: any) {
-        toast({ title: "Upload Failed", description: err.message || "Could not upload to server. Did you update the main frontend?", variant: "destructive" });
+        toast({
+          title: "Upload Failed",
+          description:
+            err.message ||
+            "Could not upload to server. Did you update the main frontend?",
+          variant: "destructive",
+        });
         setSaving(false);
         return;
       }
@@ -96,7 +107,8 @@ const TestimonialsEdit = () => {
     } catch (error: any) {
       toast({
         title: "Update failed",
-        description: error?.response?.data?.message || "Could not update testimonial.",
+        description:
+          error?.response?.data?.message || "Could not update testimonial.",
         variant: "destructive",
       });
     } finally {
@@ -105,108 +117,175 @@ const TestimonialsEdit = () => {
   };
 
   if (loading) {
-    return <div className="p-10 text-center text-green-600">Loading testimonial...</div>;
+    return (
+      <div className="min-h-screen bg-[#F4F7F2] flex items-center justify-center">
+        <p className="text-[#5B6B64]">Loading testimonial...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4">
-      <div className="max-w-3xl mx-auto py-8">
-        <Button
-          variant="outline"
-          onClick={() => navigate("/testimonials-data")}
-          className="mb-6 border-green-600 text-green-600 hover:bg-green-50"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Testimonials
-        </Button>
-        <Card className="border-2 border-green-200">
-          <CardHeader className="bg-green-600 text-white">
-            <CardTitle className="text-2xl flex items-center">
-              <Star className="mr-2" />
-              Edit Testimonial
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label className="text-green-800">Name *</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((current) => ({ ...current, name: e.target.value }))
-                  }
-                  required
+    <div className="min-h-screen bg-[#F4F7F2]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+        .font-display { font-family: 'Oswald', sans-serif; }
+        .font-mono-score { font-family: 'JetBrains Mono', monospace; }
+        body, .font-body { font-family: 'Inter', sans-serif; }
+
+        .corner-card { position: relative; }
+        .corner-card::before,
+        .corner-card::after {
+          content: "";
+          position: absolute;
+          width: 14px;
+          height: 14px;
+          border-color: #C8FF4D;
+          opacity: 0;
+          transition: opacity 0.15s ease;
+        }
+        .corner-card::before { top: 8px; left: 8px; border-top: 2px solid; border-left: 2px solid; }
+        .corner-card::after { bottom: 8px; right: 8px; border-bottom: 2px solid; border-right: 2px solid; }
+        .corner-card:hover::before, .corner-card:hover::after { opacity: 1; }
+      `}</style>
+
+      <header className="sticky top-0 z-20 bg-white border-b border-black/5">
+        <div className="px-4 md:px-8 py-4">
+          <button
+            onClick={() => navigate("/testimonials-data")}
+            className="inline-flex items-center gap-1.5 text-sm text-[#5B6B64] hover:text-[#0B1410] transition-colors mb-3"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to testimonials
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1B4332]">
+              <Star className="h-5 w-5 text-[#C8FF4D]" />
+            </div>
+            <div>
+              <h1 className="font-display text-2xl md:text-3xl tracking-wide text-[#0B1410]">
+                Edit testimonial
+              </h1>
+              <p className="text-sm text-[#7C8B85]">
+                {formData.name || "Untitled testimonial"}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between bg-[#0B1410] px-4 md:px-8 py-2 text-[#F4F7F2]">
+          <span className="font-mono-score text-[11px] tracking-widest uppercase text-[#C8FF4D]">
+            Testimonials · Editing
+          </span>
+          <span className="font-mono-score text-[11px] tracking-widest text-[#7C8B85] uppercase">
+            {formData.mediaType || "..."}
+          </span>
+        </div>
+      </header>
+
+      <main className="max-w-3xl w-full mx-auto px-4 md:px-8 py-8">
+        <div className="corner-card bg-white rounded-xl border border-black/5 shadow-sm p-6 md:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-[#0B1410] font-semibold">Name *</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((current) => ({
+                    ...current,
+                    name: e.target.value,
+                  }))
+                }
+                className={inputClass}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#0B1410] font-semibold">Feedback *</Label>
+              <Textarea
+                value={formData.feedback}
+                onChange={(e) =>
+                  setFormData((current) => ({
+                    ...current,
+                    feedback: e.target.value,
+                  }))
+                }
+                rows={4}
+                className={inputClass}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#0B1410] font-semibold">
+                Replace media
+              </Label>
+              <Input
+                type="file"
+                accept="image/*,video/*"
+                onChange={handleMediaChange}
+                className={inputClass}
+              />
+              {previewUrl && formData.mediaType === "video" && (
+                <video
+                  src={previewUrl}
+                  controls
+                  className="mt-3 h-56 w-full rounded-lg border border-black/10 object-cover"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-green-800">Feedback *</Label>
-                <Textarea
-                  value={formData.feedback}
-                  onChange={(e) =>
-                    setFormData((current) => ({ ...current, feedback: e.target.value }))
-                  }
-                  rows={4}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-green-800">Replace Media</Label>
-                <Input type="file" accept="image/*,video/*" onChange={handleMediaChange} />
-                {previewUrl && formData.mediaType === "video" && (
-                  <video
-                    src={previewUrl}
-                    controls
-                    className="mt-3 h-56 w-full rounded-md border border-green-100 object-cover"
-                  />
-                )}
-                {!previewUrl && formData.mediaUrl && formData.mediaType === "video" && (
+              )}
+              {!previewUrl &&
+                formData.mediaUrl &&
+                formData.mediaType === "video" && (
                   <video
                     src={formData.mediaUrl}
                     controls
-                    className="mt-3 h-56 w-full rounded-md border border-green-100 object-cover"
+                    className="mt-3 h-56 w-full rounded-lg border border-black/10 object-cover"
                   />
                 )}
 
-                {previewUrl && formData.mediaType === "image" && (
-                  <img
-                    src={previewUrl}
-                    alt="Testimonial cover"
-                    className="mt-3 h-56 w-full rounded-md border border-green-100 object-cover"
-                  />
-                )}
-                {!previewUrl && formData.mediaUrl && formData.mediaType === "image" && (
+              {previewUrl && formData.mediaType === "image" && (
+                <img
+                  src={previewUrl}
+                  alt="Testimonial cover"
+                  className="mt-3 h-56 w-full rounded-lg border border-black/10 object-cover"
+                />
+              )}
+              {!previewUrl &&
+                formData.mediaUrl &&
+                formData.mediaType === "image" && (
                   <img
                     src={formData.mediaUrl}
                     alt="Testimonial cover"
-                    className="mt-3 h-56 w-full rounded-md border border-green-100 object-cover"
+                    className="mt-3 h-56 w-full rounded-lg border border-black/10 object-cover"
                   />
                 )}
-              </div>
-              <div className="space-y-2">
-                <Label className="text-green-800">Instagram Reel Link</Label>
-                <Input
-                  type="url"
-                  value={formData.instagramUrl || ""}
-                  onChange={(e) =>
-                    setFormData((current) => ({
-                      ...current,
-                      instagramUrl: e.target.value,
-                    }))
-                  }
-                />
-              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#0B1410] font-semibold">
+                Instagram reel link
+              </Label>
+              <Input
+                type="url"
+                value={formData.instagramUrl || ""}
+                onChange={(e) =>
+                  setFormData((current) => ({
+                    ...current,
+                    instagramUrl: e.target.value,
+                  }))
+                }
+                className={inputClass}
+              />
+            </div>
+            <div className="pt-2 border-t border-black/5">
               <Button
                 type="submit"
                 disabled={saving}
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full gap-1.5 bg-[#1B4332] hover:bg-[#163828] text-white mt-6"
               >
-                <Save className="mr-2 h-4 w-4" />
-                {saving ? "Saving..." : "Update Testimonial"}
+                <Save className="h-4 w-4" />
+                {saving ? "Saving..." : "Update testimonial"}
               </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+            </div>
+          </form>
+        </div>
+      </main>
     </div>
   );
 };

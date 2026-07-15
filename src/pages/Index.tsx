@@ -1,323 +1,366 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
-import { FileText, Database, Trophy, Star, Newspaper, Mail } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  FileText,
+  Building2,
+  Star,
+  Newspaper,
+  Award,
+  Mail,
+  ShieldCheck,
+  LogOut,
+  Menu,
+  Plus,
+  ListChecks,
+  ArrowUpRight,
+} from "lucide-react";
 
-const Index = () => {
+type ContentGroup = {
+  key: string;
+  label: string;
+  description: string;
+  icon: typeof FileText;
+  createHref?: string;
+  createLabel?: string;
+  viewHref: string;
+  viewLabel: string;
+};
+
+const contentGroups: ContentGroup[] = [
+  {
+    key: "blog",
+    label: "Blog",
+    description:
+      "Write posts on turf construction, court care, and sport trends.",
+    icon: FileText,
+    createHref: "/blog-admin",
+    createLabel: "New post",
+    viewHref: "/blog-data",
+    viewLabel: "Manage",
+  },
+  {
+    key: "projects",
+    label: "Projects",
+    description:
+      "Showcase finished courts and facilities with photos and details.",
+    icon: Building2,
+    createHref: "/projects-admin",
+    createLabel: "New project",
+    viewHref: "/projects-data",
+    viewLabel: "Manage",
+  },
+  {
+    key: "testimonials",
+    label: "Testimonials",
+    description: "Add client feedback, cover images, video, or a reel link.",
+    icon: Star,
+    createHref: "/testimonials-admin",
+    createLabel: "New testimonial",
+    viewHref: "/testimonials-data",
+    viewLabel: "Manage",
+  },
+  {
+    key: "news",
+    label: "News feed",
+    description: "Post updates and announcements to the site's news feed.",
+    icon: Newspaper,
+    createHref: "/news-admin",
+    createLabel: "New update",
+    viewHref: "/news-data",
+    viewLabel: "Manage",
+  },
+  {
+    key: "awards",
+    label: "Awards",
+    description: "List recognitions with a logo and year.",
+    icon: Award,
+    createHref: "/awards-admin",
+    createLabel: "New award",
+    viewHref: "/awards-data",
+    viewLabel: "Manage",
+  },
+];
+
+const soloItems: ContentGroup[] = [
+  {
+    key: "contacts",
+    label: "Contact responses",
+    description: "Every message submitted through the site's contact form.",
+    icon: Mail,
+    viewHref: "/contact-responses",
+    viewLabel: "View responses",
+  },
+  {
+    key: "admins",
+    label: "Admin access",
+    description: "Control which Google accounts can sign in to this dashboard.",
+    icon: ShieldCheck,
+    viewHref: "/admin-users",
+    viewLabel: "Manage access",
+  },
+];
+
+const navItems = [...contentGroups, ...soloItems];
+
+const todayLabel = new Date().toLocaleDateString("en-IN", {
+  weekday: "short",
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
+function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex flex-col items-center justify-start p-6 md:p-8">
-      <div className="max-w-5xl w-full">
-        <div className="text-center mb-10 md:mb-14 pt-6">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-green-600 rounded-full mb-4 md:mb-6 mx-auto">
-            <img
-              src="/GO.png"
-              alt="GameOn Logo"
-              className="w-20 h-20 rounded-full"
-            />
-          </div>
-
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-green-800 mb-2 md:mb-3">
-            GameOn Blog Admin
-          </h1>
-          <p className="text-base md:text-lg text-green-700 max-w-2xl mx-auto">
-            Manage your sports blog content with our turf-themed admin
-            interface. Create engaging content about pickleball, sports courts,
-            and more.
+    <div className="flex h-full flex-col bg-[#0B1410] text-[#F4F7F2]">
+      <div className="flex items-center gap-3 px-6 py-6 border-b border-white/10">
+        <img
+          src="/GO.png"
+          className="h-10 w-10 rounded-lg"
+          alt="GameOn Solution"
+        />
+        <div>
+          <p className="font-display text-lg leading-none tracking-wide">
+            GameOn Solution
           </p>
-        </div>
-
-        {/* Grid: 1 column small screens, 2 columns medium and up. Each card has consistent height and spacing. */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-          {/* Card 1 */}
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="flex items-center mb-4">
-                <FileText className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  Blog Admin
-                </h2>
-              </div>
-
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Create and manage blog posts with rich content, tags, and
-                images. Perfect for sharing insights about sports court
-                construction and pickleball trends.
-              </p>
-            </div>
-
-            <div className="mt-4">
-              <Link to="/blog-admin">
-                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                  Create New Blog Post
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="flex items-center mb-4">
-                <Database className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  Blog Data
-                </h2>
-              </div>
-
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                View and manage all submitted blog entries. Review content, edit
-                posts, and track your sports content library.
-              </p>
-            </div>
-
-            <div className="mt-4">
-              <Link to="/blog-data">
-                <Button
-                  variant="outline"
-                  className="w-full border-green-600 text-green-600 hover:bg-green-50"
-                >
-                  View All Posts
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="flex items-center mb-4">
-                <Trophy className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  Add Project
-                </h2>
-              </div>
-
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Showcase completed sports court projects with images and
-                details. Display your portfolio of pickleball courts and
-                facilities.
-              </p>
-            </div>
-
-            <div className="mt-4">
-              <Link to="/projects-admin">
-                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                  Add New Project
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Card 4 */}
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="flex items-center mb-4">
-                <Database className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  Projects Data
-                </h2>
-              </div>
-
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                View and manage all submitted projects. Review content, delete
-                projects, and track your sports facility portfolio.
-              </p>
-            </div>
-
-            <div className="mt-4">
-              <Link to="/projects-data">
-                <Button
-                  variant="outline"
-                  className="w-full border-green-600 text-green-600 hover:bg-green-50"
-                >
-                  View All Projects
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="flex items-center mb-4">
-                <Star className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  Add Testimonial
-                </h2>
-              </div>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Upload customer testimonials with a name, feedback, cover image
-                or playable video, plus an optional Instagram reel link.
-              </p>
-            </div>
-            <div className="mt-4">
-              <Link to="/testimonials-admin">
-                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                  Add New Testimonial
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="flex items-center mb-4">
-                <Database className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  Testimonials Data
-                </h2>
-              </div>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                View, edit, and delete testimonial cards in the same card-style
-                layout as your project section.
-              </p>
-            </div>
-            <div className="mt-4">
-              <Link to="/testimonials-data">
-                <Button
-                  variant="outline"
-                  className="w-full border-green-600 text-green-600 hover:bg-green-50"
-                >
-                  View Testimonials
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="flex items-center mb-4">
-                <Newspaper className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  Add News Feed
-                </h2>
-              </div>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Create news feed items with a title, image, and details for
-                updates, announcements, and sports activity posts.
-              </p>
-            </div>
-            <div className="mt-4">
-              <Link to="/news-admin">
-                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                  Add News
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="flex items-center mb-4">
-                <Database className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  News Data
-                </h2>
-              </div>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Review, edit, and remove all news feed cards from one admin
-                screen.
-              </p>
-            </div>
-            <div className="mt-4">
-              <Link to="/news-data">
-                <Button
-                  variant="outline"
-                  className="w-full border-green-600 text-green-600 hover:bg-green-50"
-                >
-                  View News Feed
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="flex items-center mb-4">
-                <Trophy className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  Add Award
-                </h2>
-              </div>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Create award items with a title, image logo, and date/year.
-              </p>
-            </div>
-            <div className="mt-4">
-              <Link to="/awards-admin">
-                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                  Add Award
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="flex items-center mb-4">
-                <Database className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  Awards Data
-                </h2>
-              </div>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Review and delete all awards from one admin screen.
-              </p>
-            </div>
-            <div className="mt-4">
-              <Link to="/awards-data">
-                <Button
-                  variant="outline"
-                  className="w-full border-green-600 text-green-600 hover:bg-green-50"
-                >
-                  View Awards
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-2 border-green-200 hover:border-green-400 transition-colors flex flex-col justify-between min-h-[320px] md:col-span-2">
-            <div>
-              <div className="flex items-center mb-4">
-                <Mail className="w-7 h-7 text-green-600 mr-3" />
-                <h2 className="text-xl md:text-2xl font-semibold text-green-800">
-                  Contact Responses
-                </h2>
-              </div>
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                See every contact form response in a dashboard-style page with
-                sender details, messages, dates, and delete controls.
-              </p>
-            </div>
-            <div className="mt-4">
-              <Link to="/contact-responses">
-                <Button
-                  variant="outline"
-                  className="w-full border-green-600 text-green-600 hover:bg-green-50"
-                >
-                  View Contact Responses
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 md:mt-10 text-center">
-          <div className="inline-flex items-center space-x-2 bg-green-100 px-4 py-2 rounded-full mx-auto">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-green-700 font-medium">
-              Ready to manage your sports content
-            </span>
-          </div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-[#7C8B85]">
+            Content CMS
+          </p>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="w-full max-w-5xl mt-8 md:mt-12 text-center px-4">
-        <small className="text-sm text-green-700">
-          Copyright owned by GameOn Solutions
-        </small>
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        {navItems.map((item) => (
+          <Link
+            key={item.key}
+            to={item.viewHref}
+            onClick={onNavigate}
+            className="group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[#D8E0DC] hover:bg-[#1B4332] hover:text-white transition-colors"
+          >
+            <item.icon className="h-4 w-4 shrink-0 text-[#7C8B85] group-hover:text-[#C8FF4D]" />
+            <span>{item.label}</span>
+          </Link>
+        ))}
+      </nav>
+
+      <div className="border-t border-white/10 p-3">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-[#D8E0DC] hover:bg-white/5 hover:text-white"
+          onClick={() => {
+            onNavigate?.();
+          }}
+          asChild
+        >
+          <SignOutButton />
+        </Button>
       </div>
     </div>
   );
-};
+}
 
-export default Index;
+function SignOutButton() {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      className="flex w-full items-center gap-3"
+      onClick={async () => {
+        await signOut(auth);
+        navigate("/login", { replace: true });
+      }}
+    >
+      <LogOut className="h-4 w-4" />
+      Sign out
+    </button>
+  );
+}
+
+export default function Index() {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-[#F4F7F2]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+        .font-display { font-family: 'Oswald', sans-serif; }
+        .font-mono-score { font-family: 'JetBrains Mono', monospace; }
+        body, .font-body { font-family: 'Inter', sans-serif; }
+
+        .corner-card { position: relative; }
+        .corner-card::before,
+        .corner-card::after {
+          content: "";
+          position: absolute;
+          width: 14px;
+          height: 14px;
+          border-color: #C8FF4D;
+          opacity: 0;
+          transition: opacity 0.15s ease;
+        }
+        .corner-card::before {
+          top: 8px; left: 8px;
+          border-top: 2px solid; border-left: 2px solid;
+        }
+        .corner-card::after {
+          bottom: 8px; right: 8px;
+          border-bottom: 2px solid; border-right: 2px solid;
+        }
+        .corner-card:hover::before,
+        .corner-card:hover::after { opacity: 1; }
+
+        @keyframes pulse-dot {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
+        }
+        .live-dot { animation: pulse-dot 2s ease-in-out infinite; }
+      `}</style>
+
+      <div className="flex">
+        {/* Desktop sidebar */}
+        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
+          <Sidebar />
+        </aside>
+
+        {/* Main column */}
+        <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+          {/* Top bar */}
+          <header className="sticky top-0 z-20 bg-white border-b border-black/5">
+            <div className="flex items-center justify-between px-4 md:px-8 py-4">
+              <div className="flex items-center gap-3">
+                <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+                  <SheetTrigger asChild className="lg:hidden">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label="Open menu"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="p-0 w-72 border-0">
+                    <Sidebar onNavigate={() => setMobileNavOpen(false)} />
+                  </SheetContent>
+                </Sheet>
+                <div>
+                  <h1 className="font-display text-2xl md:text-3xl tracking-wide text-[#0B1410]">
+                    Dashboard
+                  </h1>
+                  <p className="text-sm text-[#7C8B85]">
+                    Manage GameOn Solution's website content
+                  </p>
+                </div>
+              </div>
+
+              <div className="hidden md:block">
+                <SignOutButton />
+              </div>
+            </div>
+
+            {/* Scoreboard strip — signature element */}
+            <div className="flex items-center justify-between bg-[#0B1410] px-4 md:px-8 py-2 text-[#F4F7F2]">
+              <div className="flex items-center gap-2">
+                <span className="live-dot h-2 w-2 rounded-full bg-[#C8FF4D]" />
+                <span className="font-mono-score text-[11px] tracking-widest uppercase text-[#C8FF4D]">
+                  Site live
+                </span>
+              </div>
+              <span className="font-mono-score text-[11px] tracking-widest text-[#7C8B85]">
+                {todayLabel}
+              </span>
+            </div>
+          </header>
+
+          {/* Content */}
+          <main className="flex-1 px-4 md:px-8 py-8 max-w-6xl w-full mx-auto">
+            <section className="mb-10">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7C8B85] mb-4">
+                Content library
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {contentGroups.map((item) => (
+                  <div
+                    key={item.key}
+                    className="bg-white rounded-xl border border-black/5 shadow-sm p-6 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1B4332]">
+                          <item.icon className="h-5 w-5 text-[#C8FF4D]" />
+                        </div>
+                        <h2 className="font-display text-lg tracking-wide text-[#0B1410]">
+                          {item.label}
+                        </h2>
+                      </div>
+                      <p className="text-sm text-[#5B6B64] leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 flex items-center gap-2">
+                      {item.createHref && (
+                        <Link to={item.createHref} className="min-w-0 flex-1">
+                          <Button className="w-full gap-1.5 bg-[#1B4332] hover:bg-[#163828] text-white px-3">
+                            <Plus className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{item.createLabel}</span>
+                          </Button>
+                        </Link>
+                      )}
+                      <Link to={item.viewHref} className="min-w-0 flex-1">
+                        <Button
+                          variant="outline"
+                          className="w-full gap-1.5 border-[#1B4332]/30 px-3"
+                        >
+                          <ListChecks className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{item.viewLabel}</span>
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7C8B85] mb-4">
+                Operations
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {soloItems.map((item) => (
+                  <Link key={item.key} to={item.viewHref}>
+                    <div className="bg-white rounded-xl border border-black/5 shadow-sm p-6 flex items-center justify-between hover:border-[#1B4332]/30 transition-colors">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0B1410] shrink-0">
+                          <item.icon className="h-5 w-5 text-[#C8FF4D]" />
+                        </div>
+                        <div className="min-w-0">
+                          <h2 className="font-display text-base tracking-wide text-[#0B1410]">
+                            {item.label}
+                          </h2>
+                          <p className="text-sm text-[#7C8B85] truncate">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                      <ArrowUpRight className="h-5 w-5 text-[#7C8B85] shrink-0" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          </main>
+
+          <footer className="px-4 md:px-8 py-6 text-center">
+            <p className="text-xs text-[#7C8B85]">
+              &copy; {new Date().getFullYear()} GameOn Solution. All rights
+              reserved.
+            </p>
+          </footer>
+        </div>
+      </div>
+    </div>
+  );
+}
