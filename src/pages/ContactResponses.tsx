@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ArrowLeft, Mail, Phone, Trash2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, getAuthHeaders } from "@/lib/api";
 
 interface ContactResponse {
   id: string;
@@ -26,7 +26,8 @@ const ContactResponses = () => {
   const fetchResponses = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/contacts`);
+      const headers = await getAuthHeaders();
+      const res = await axios.get(`${API_BASE_URL}/api/contacts`, { headers });
       setResponses(res.data?.contacts || []);
     } catch (error: any) {
       toast({
@@ -41,15 +42,12 @@ const ContactResponses = () => {
     }
   };
 
-  useEffect(() => {
-    fetchResponses();
-  }, []);
-
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this contact response?")) return;
     setDeletingId(id);
     try {
-      await axios.delete(`${API_BASE_URL}/api/contacts/${id}`);
+      const headers = await getAuthHeaders();
+      await axios.delete(`${API_BASE_URL}/api/contacts/${id}`, { headers });
       setResponses((current) => current.filter((item) => item.id !== id));
       toast({ title: "Deleted", description: "Contact response removed." });
     } catch (error: any) {

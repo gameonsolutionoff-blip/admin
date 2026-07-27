@@ -73,16 +73,16 @@ const contentGroups: ContentGroup[] = [
     viewHref: "/news-data",
     viewLabel: "Manage",
   },
-  {
-    key: "awards",
-    label: "Awards",
-    description: "List recognitions with a logo and year.",
-    icon: Award,
-    createHref: "/awards-admin",
-    createLabel: "New award",
-    viewHref: "/awards-data",
-    viewLabel: "Manage",
-  },
+  // {
+  //   key: "awards",
+  //   label: "Awards",
+  //   description: "List recognitions with a logo and year.",
+  //   icon: Award,
+  //   createHref: "/awards-admin",
+  //   createLabel: "New award",
+  //   viewHref: "/awards-data",
+  //   viewLabel: "Manage",
+  // },
 ];
 
 const soloItems: ContentGroup[] = [

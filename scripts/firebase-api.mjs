@@ -23,7 +23,7 @@ const port = Number(process.env.PORT || 4000);
 // account JSON as a single-line string. No hardcoded fallback — a missing
 // credential should fail loudly, not silently fall back to something wrong.
 // ---------------------------------------------------------------------------
-const serviceAccountRaw = process.env.VITE_FIREBASE_SERVICE_ACCOUNT;
+const serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT;
 
 if (!serviceAccountRaw) {
   throw new Error(
@@ -302,20 +302,17 @@ const handleLegacyV1 = async (req, res, segments) => {
 const handleCollection = async (req, res, segments, config) => {
   const id = segments[2];
 
+  if (req.method === "GET" && config.requireAuthForRead) {
+    const adminEmail = await requireAdmin(req);
+    if (!adminEmail) {
+      send(res, 401, { success: false, message: "Unauthorized" });
+      return;
+    }
+  }
+
   if (req.method === "GET" && !id) {
     const data = await getAllDocs(config.key);
     send(res, 200, { success: true, [config.key]: data });
-    return;
-  }
-
-  if (req.method === "GET" && id) {
-    const data = await getAllDocs(config.key);
-    const item = data.find((entry) => entry.id === id);
-    if (!item) {
-      send(res, 404, { success: false, message: `${config.label} not found` });
-      return;
-    }
-    send(res, 200, { success: true, [config.singleKey]: item });
     return;
   }
 
@@ -645,13 +642,13 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (segments[0] === "api" && segments[1] === "contacts") {
-      // Contact form creation stays public; updates/deletes require admin.
       await handleCollection(req, res, segments, {
         key: "contacts",
         singleKey: "contact",
         label: "Contact",
         required: ["name", "email", "message"],
         publicCreate: true,
+        requireAuthForRead: true, // ← add this
       });
       return;
     }

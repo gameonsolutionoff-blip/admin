@@ -25,11 +25,14 @@ interface Testimonial {
   createdAt?: string;
 }
 
+type SortOrder = "new" | "old";
+
 const TestimonialsData = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [items, setItems] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("new");
 
   const fetchTestimonials = async () => {
     setLoading(true);
@@ -58,6 +61,19 @@ const TestimonialsData = () => {
     setItems((current) => current.filter((item) => item.id !== id));
     toast({ title: "Deleted", description: "Testimonial removed." });
   };
+
+  // Sort a copy of items by createdAt, newest-first or oldest-first.
+  // Items with missing/invalid dates are pushed to the end regardless of order.
+  const sortedItems = [...items].sort((a, b) => {
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : NaN;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : NaN;
+
+    if (isNaN(aTime) && isNaN(bTime)) return 0;
+    if (isNaN(aTime)) return 1;
+    if (isNaN(bTime)) return -1;
+
+    return sortOrder === "new" ? bTime - aTime : aTime - bTime;
+  });
 
   return (
     <div className="min-h-screen bg-[#F4F7F2]">
@@ -113,6 +129,31 @@ const TestimonialsData = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* New / Old sort toggle */}
+              <div className="flex items-center rounded-lg border border-[#1B4332]/30 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setSortOrder("new")}
+                  className={`px-3 py-2 text-sm font-medium transition-colors ${
+                    sortOrder === "new"
+                      ? "bg-[#1B4332] text-white"
+                      : "bg-white text-[#1B4332] hover:bg-[#1B4332]/5"
+                  }`}
+                >
+                  New
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortOrder("old")}
+                  className={`px-3 py-2 text-sm font-medium transition-colors border-l border-[#1B4332]/30 ${
+                    sortOrder === "old"
+                      ? "bg-[#1B4332] text-white"
+                      : "bg-white text-[#1B4332] hover:bg-[#1B4332]/5"
+                  }`}
+                >
+                  Old
+                </button>
+              </div>
               <Button
                 variant="outline"
                 className="gap-1.5 border-[#1B4332]/30"
@@ -136,7 +177,8 @@ const TestimonialsData = () => {
             <span className="live-dot h-2 w-2 rounded-full bg-[#C8FF4D]" />
             <span className="font-mono-score text-[11px] tracking-widest uppercase text-[#C8FF4D]">
               Testimonials · {items.length}{" "}
-              {items.length === 1 ? "entry" : "entries"}
+              {items.length === 1 ? "entry" : "entries"} ·{" "}
+              {sortOrder === "new" ? "Newest first" : "Oldest first"}
             </span>
           </div>
         </div>
@@ -147,7 +189,7 @@ const TestimonialsData = () => {
           <div className="corner-card bg-white rounded-xl border border-black/5 shadow-sm p-12 text-center">
             <p className="text-[#5B6B64]">Loading testimonials...</p>
           </div>
-        ) : items.length === 0 ? (
+        ) : sortedItems.length === 0 ? (
           <div className="corner-card bg-white rounded-xl border border-black/5 shadow-sm p-12 text-center">
             <div className="w-16 h-16 bg-[#1B4332] rounded-lg flex items-center justify-center mx-auto mb-4">
               <Star className="w-8 h-8 text-[#C8FF4D]" />
@@ -167,7 +209,7 @@ const TestimonialsData = () => {
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
+            {sortedItems.map((item) => (
               <div
                 key={item.id}
                 className="corner-card bg-white rounded-xl border border-black/5 shadow-sm overflow-hidden flex flex-col"

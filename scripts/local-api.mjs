@@ -3,26 +3,34 @@ import fs from "node:fs";
 import path from "node:path";
 import axios from "axios";
 import { initializeApp } from "firebase/app";
-import { 
-  getFirestore, 
-  collection, 
-  getDocs, 
-  doc, 
-  setDoc, 
-  addDoc, 
-  deleteDoc, 
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  addDoc,
+  deleteDoc,
   updateDoc,
   query,
-  where
+  where,
 } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyCT6YIG_7ZWH96Sef2YjIsRaWVooyU03gw",
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "gameon-b6644.firebaseapp.com",
+  apiKey:
+    process.env.VITE_FIREBASE_API_KEY ||
+    "AIzaSyCT6YIG_7ZWH96Sef2YjIsRaWVooyU03gw",
+  authDomain:
+    process.env.VITE_FIREBASE_AUTH_DOMAIN || "gameon-b6644.firebaseapp.com",
   projectId: process.env.VITE_FIREBASE_PROJECT_ID || "gameon-b6644",
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "gameon-b6644.firebasestorage.app",
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "773390007721",
-  appId: process.env.VITE_FIREBASE_APP_ID || "1:773390007721:web:9372208bb8f9ca0d8958b8"
+  storageBucket:
+    process.env.VITE_FIREBASE_STORAGE_BUCKET ||
+    "gameon-b6644.firebasestorage.app",
+  messagingSenderId:
+    process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "773390007721",
+  appId:
+    process.env.VITE_FIREBASE_APP_ID ||
+    "1:773390007721:web:9372208bb8f9ca0d8958b8",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -33,7 +41,7 @@ const send = (res, status, body) => {
   res.writeHead(status, {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json",
   });
   res.end(JSON.stringify(body));
@@ -43,38 +51,55 @@ const processBase64Images = async (body, req) => {
   const saveBase64ToHostinger = async (dataUrl) => {
     const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) return dataUrl;
-    
+
     const mimeType = matches[1];
     let ext = mimeType.split("/")[1] || "bin";
     if (ext === "jpeg") ext = "jpg";
-    
-    const filename = `${Date.now()}-${Math.round(Math.random() * 100000)}.${ext}`;
-    
+
+    const filename = `${Date.now()}-${Math.round(
+      Math.random() * 100000
+    )}.${ext}`;
+
     try {
-      const response = await axios.post("https://gameonsolution.gameonsolution.in/upload.php", {
-        secret: "gameon-super-secret-key-123",
-        filename: filename,
-        base64: dataUrl
-      }, {
-        headers: { 
-          "Content-Type": "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      const response = await axios.post(
+        "https://gameonsolution.gameonsolution.in/upload.php",
+        {
+          secret: "gameon-super-secret-key-123",
+          filename: filename,
+          base64: dataUrl,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
         }
-      });
-      
+      );
+
       const result = response.data;
       if (result.success) {
         return { url: result.url };
       }
       return { error: "PHP Upload failed: " + JSON.stringify(result) };
     } catch (e) {
-      return { error: "PHP Upload Error: " + (e.response ? e.response.status + " " + JSON.stringify(e.response.data) : e.message) };
+      return {
+        error:
+          "PHP Upload Error: " +
+          (e.response
+            ? e.response.status + " " + JSON.stringify(e.response.data)
+            : e.message),
+      };
     }
   };
 
   const fieldsToCheck = ["image", "imageUrl", "mediaUrl"];
   for (const field of fieldsToCheck) {
-    if (body[field] && typeof body[field] === "string" && body[field].startsWith("data:")) {
+    if (
+      body[field] &&
+      typeof body[field] === "string" &&
+      body[field].startsWith("data:")
+    ) {
       const res = await saveBase64ToHostinger(body[field]);
       if (res.url) {
         body[field] = res.url;
@@ -96,19 +121,31 @@ const processBase64Images = async (body, req) => {
   };
 
   const imgRegex = /src="data:([A-Za-z-+\/]+);base64,([^"]+)"/g;
-  
+
   if (body.content && typeof body.content === "string") {
-    body.content = await asyncReplaceAll(body.content, imgRegex, async (match) => {
-      const url = await saveBase64ToHostinger(`data:${match[1]};base64,${match[2]}`);
-      return `src="${url}"`;
-    });
+    body.content = await asyncReplaceAll(
+      body.content,
+      imgRegex,
+      async (match) => {
+        const url = await saveBase64ToHostinger(
+          `data:${match[1]};base64,${match[2]}`
+        );
+        return `src="${url}"`;
+      }
+    );
   }
-  
+
   if (body.details && typeof body.details === "string") {
-    body.details = await asyncReplaceAll(body.details, imgRegex, async (match) => {
-      const url = await saveBase64ToHostinger(`data:${match[1]};base64,${match[2]}`);
-      return `src="${url}"`;
-    });
+    body.details = await asyncReplaceAll(
+      body.details,
+      imgRegex,
+      async (match) => {
+        const url = await saveBase64ToHostinger(
+          `data:${match[1]};base64,${match[2]}`
+        );
+        return `src="${url}"`;
+      }
+    );
   }
 
   return body;
@@ -138,7 +175,9 @@ const readJsonBody = (req) =>
   });
 
 const sortNewest = (items) =>
-  [...items].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  [...items].sort(
+    (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+  );
 
 const getAllDocs = async (collName) => {
   const querySnapshot = await getDocs(collection(db, collName));
@@ -176,7 +215,10 @@ const handleLegacyV1 = async (req, res, segments) => {
     return true;
   }
 
-  if ((resource === "newsfeed" || resource === "newsfeeds") && req.method === "GET") {
+  if (
+    (resource === "newsfeed" || resource === "newsfeeds") &&
+    req.method === "GET"
+  ) {
     const data = await getAllDocs("newsFeeds");
     send(res, 200, data.map(toLegacyNewsFeed));
     return true;
@@ -231,10 +273,17 @@ const handleCollection = async (req, res, segments, config) => {
     const body = await readJsonBody(req);
     const missing = config.required.filter((field) => !body[field]);
     if (missing.length) {
-      send(res, 400, { success: false, message: `Missing (${missing.join(", ")})` });
+      send(res, 400, {
+        success: false,
+        message: `Missing (${missing.join(", ")})`,
+      });
       return;
     }
-    const item = { ...body, createdAt: new Date().toISOString(), updatedAt: null };
+    const item = {
+      ...body,
+      createdAt: new Date().toISOString(),
+      updatedAt: null,
+    };
     const docRef = await addDoc(collection(db, config.key), item);
     send(res, 200, { success: true, id: docRef.id });
     return;
@@ -270,7 +319,9 @@ const handleBlogs = async (req, res, segments) => {
 
   if (req.method === "GET" && idOrSlug) {
     let blogs = await getAllDocs("blogs");
-    const blog = blogs.find(item => item.id === idOrSlug || item.slug === idOrSlug);
+    const blog = blogs.find(
+      (item) => item.id === idOrSlug || item.slug === idOrSlug
+    );
     if (!blog) {
       send(res, 404, { success: false, message: "Blog not found" });
       return;
@@ -336,13 +387,16 @@ const handleProjects = async (req, res, segments) => {
 
   if (req.method === "GET" && !id) {
     const projects = await getAllDocs("projects");
-    send(res, 200, { success: true, projects: projects.map(toProjectResponse) });
+    send(res, 200, {
+      success: true,
+      projects: projects.map(toProjectResponse),
+    });
     return;
   }
 
   if (req.method === "GET" && id) {
     const projects = await getAllDocs("projects");
-    const project = projects.find(item => item.id === id);
+    const project = projects.find((item) => item.id === id);
     if (!project) {
       send(res, 404, { success: false, message: "Project not found" });
       return;
@@ -353,7 +407,12 @@ const handleProjects = async (req, res, segments) => {
 
   if (req.method === "POST") {
     const body = await readJsonBody(req);
-    if (!body.imageUrl || !body.title || !body.location || !body.shortDescription) {
+    if (
+      !body.imageUrl ||
+      !body.title ||
+      !body.location ||
+      !body.shortDescription
+    ) {
       send(res, 400, { success: false, message: "Missing required fields" });
       return;
     }
@@ -414,10 +473,10 @@ const server = http.createServer(async (req, res) => {
         else if (ext === ".gif") contentType = "image/gif";
         else if (ext === ".webp") contentType = "image/webp";
         else if (ext === ".mp4") contentType = "video/mp4";
-        
+
         res.writeHead(200, {
-           "Content-Type": contentType,
-           "Access-Control-Allow-Origin": "*"
+          "Content-Type": contentType,
+          "Access-Control-Allow-Origin": "*",
         });
         fs.createReadStream(filePath).pipe(res);
         return;
@@ -442,21 +501,27 @@ const server = http.createServer(async (req, res) => {
     }
     if (segments[0] === "api" && segments[1] === "testimonials") {
       await handleCollection(req, res, segments, {
-        key: "testimonials", singleKey: "testimonial", label: "Testimonial",
+        key: "testimonials",
+        singleKey: "testimonial",
+        label: "Testimonial",
         required: ["name", "feedback", "mediaUrl", "mediaType"],
       });
       return;
     }
     if (segments[0] === "api" && segments[1] === "news-feeds") {
       await handleCollection(req, res, segments, {
-        key: "newsFeeds", singleKey: "newsFeed", label: "News feed",
+        key: "newsFeeds",
+        singleKey: "newsFeed",
+        label: "News feed",
         required: ["title", "imageUrl", "details"],
       });
       return;
     }
     if (segments[0] === "api" && segments[1] === "contacts") {
       await handleCollection(req, res, segments, {
-        key: "contacts", singleKey: "contact", label: "Contact",
+        key: "contacts",
+        singleKey: "contact",
+        label: "Contact",
         required: ["name", "email", "message"],
       });
       return;
@@ -464,7 +529,10 @@ const server = http.createServer(async (req, res) => {
     send(res, 404, { success: false, message: "Route not found" });
   } catch (error) {
     console.error(error);
-    send(res, 500, { success: false, message: error.message || "Server error" });
+    send(res, 500, {
+      success: false,
+      message: error.message || "Server error",
+    });
   }
 });
 
