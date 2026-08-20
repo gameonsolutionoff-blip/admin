@@ -473,7 +473,10 @@ const ContactResponses = () => {
   const fetchResponses = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/contacts`);
+      const token = await user?.getIdToken(true);
+      const res = await axios.get(`${API_BASE_URL}/api/contacts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setResponses(res.data?.contacts || []);
     } catch (error: any) {
       toast({
@@ -496,7 +499,7 @@ const ContactResponses = () => {
     if (!window.confirm("Delete this contact response?")) return;
     setDeletingId(id);
     try {
-      const token = await user?.getIdToken();
+      const token = await user?.getIdToken(true);
       await axios.delete(`${API_BASE_URL}/api/contacts/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
