@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { API_BASE_URL } from "@/lib/api";
 
 interface NewsFeed {
@@ -45,6 +46,7 @@ const formatDate = (dateString?: string) => {
 
 const NewsData = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [items, setItems] = useState<NewsFeed[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -77,7 +79,10 @@ const NewsData = () => {
     )
       return;
     try {
-      await axios.delete(`${API_BASE_URL}/api/news-feeds/${id}`);
+      const token = await user?.getIdToken(true);
+      await axios.delete(`${API_BASE_URL}/api/news-feeds/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setItems((current) => current.filter((item) => item.id !== id));
       toast({ title: "🗑️ Deleted", description: "News feed item removed." });
     } catch (error: any) {

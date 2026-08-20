@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { isInlineImage } from "@/lib/imageUpload";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -28,15 +29,13 @@ interface BlogPost {
   createdAt?: string;
 }
 
-type SortOrder = "new" | "old";
-
 const API_URL = API_BASE_URL;
 
 const BlogData = () => {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sortOrder, setSortOrder] = useState<SortOrder>("new");
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const fetchBlogs = async () => {
     setLoading(true);
@@ -73,7 +72,10 @@ const BlogData = () => {
     if (!ok) return;
 
     try {
-      const res = await axios.delete(`${API_URL}/api/blogs/${id}`);
+      const token = await user?.getIdToken(true);
+      const res = await axios.delete(`${API_URL}/api/blogs/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.data && res.data.success) {
         setBlogPosts((prev) => prev.filter((post) => post.id !== id));
         toast({
@@ -86,11 +88,16 @@ const BlogData = () => {
           description: res.data?.message || "Failed to delete blog",
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error deleting blog:", err);
+      const message =
+        err?.response?.data?.message ||
+        (err?.response?.status === 401
+          ? "Not authorized. Try signing out and back in."
+          : "Could not delete blog. Check backend logs.");
       toast({
         title: "❌ Failed",
-        description: "Could not delete blog. Check backend logs.",
+        description: message,
       });
     }
   };
@@ -107,19 +114,6 @@ const BlogData = () => {
       return "Unknown date";
     }
   };
-
-  // Sort a copy of blogPosts by createdAt, newest-first or oldest-first.
-  // Posts with missing/invalid dates are pushed to the end regardless of order.
-  const sortedBlogPosts = [...blogPosts].sort((a, b) => {
-    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : NaN;
-    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : NaN;
-
-    if (isNaN(aTime) && isNaN(bTime)) return 0;
-    if (isNaN(aTime)) return 1;
-    if (isNaN(bTime)) return -1;
-
-    return sortOrder === "new" ? bTime - aTime : aTime - bTime;
-  });
 
   return (
     <div className="min-h-screen bg-[#F4F7F2]">
@@ -177,31 +171,6 @@ const BlogData = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* New / Old sort toggle */}
-              <div className="flex items-center rounded-lg border border-[#1B4332]/30 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setSortOrder("new")}
-                  className={`px-3 py-2 text-sm font-medium transition-colors ${
-                    sortOrder === "new"
-                      ? "bg-[#1B4332] text-white"
-                      : "bg-white text-[#1B4332] hover:bg-[#1B4332]/5"
-                  }`}
-                >
-                  New
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSortOrder("old")}
-                  className={`px-3 py-2 text-sm font-medium transition-colors border-l border-[#1B4332]/30 ${
-                    sortOrder === "old"
-                      ? "bg-[#1B4332] text-white"
-                      : "bg-white text-[#1B4332] hover:bg-[#1B4332]/5"
-                  }`}
-                >
-                  Old
-                </button>
-              </div>
               <Button
                 variant="outline"
                 className="gap-1.5 border-[#1B4332]/30"
@@ -229,8 +198,7 @@ const BlogData = () => {
             <span className="live-dot h-2 w-2 rounded-full bg-[#C8FF4D]" />
             <span className="font-mono-score text-[11px] tracking-widest uppercase text-[#C8FF4D]">
               Blog · {blogPosts.length}{" "}
-              {blogPosts.length === 1 ? "post" : "posts"} ·{" "}
-              {sortOrder === "new" ? "Newest first" : "Oldest first"}
+              {blogPosts.length === 1 ? "post" : "posts"}
             </span>
           </div>
         </div>
@@ -241,7 +209,7 @@ const BlogData = () => {
           <div className="corner-card bg-white rounded-xl border border-black/5 shadow-sm p-12 text-center">
             <p className="text-[#5B6B64]">Loading blogs...</p>
           </div>
-        ) : sortedBlogPosts.length === 0 ? (
+        ) : blogPosts.length === 0 ? (
           <div className="corner-card bg-white rounded-xl border border-black/5 shadow-sm p-12 text-center">
             <div className="w-16 h-16 bg-[#1B4332] rounded-lg flex items-center justify-center mx-auto mb-4">
               <Eye className="w-8 h-8 text-[#C8FF4D]" />
@@ -261,7 +229,7 @@ const BlogData = () => {
           </div>
         ) : (
           <div className="grid gap-5">
-            {sortedBlogPosts.map((post) => (
+            {blogPosts.map((post) => (
               <div
                 key={post.id}
                 className="corner-card bg-white rounded-xl border border-black/5 shadow-sm p-6"

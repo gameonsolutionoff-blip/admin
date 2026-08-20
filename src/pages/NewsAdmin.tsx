@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Newspaper, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import axios from "axios";
 import { API_BASE_URL } from "@/lib/api";
 import { uploadMediaDirectly } from "@/lib/imageUpload";
@@ -15,6 +16,7 @@ const inputClass =
 
 const NewsAdmin = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [uploadType, setUploadType] = useState<"image" | "youtube">("image");
   const [formData, setFormData] = useState({
     title: "",
@@ -82,12 +84,17 @@ const NewsAdmin = () => {
         mediaUrl = await uploadMediaDirectly(selectedFile);
       }
 
-      await axios.post(`${API_BASE_URL}/api/news-feeds`, {
-        title: formData.title.trim(),
-        imageUrl: mediaUrl,
-        fileType: uploadType,
-        details: formData.details.trim(),
-      });
+      const token = await user?.getIdToken(true);
+      await axios.post(
+        `${API_BASE_URL}/api/news-feeds`,
+        {
+          title: formData.title.trim(),
+          imageUrl: mediaUrl,
+          fileType: uploadType,
+          details: formData.details.trim(),
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       toast({ title: "✅ News saved", description: "News feed item created." });
       navigate("/news-data");
     } catch (error: any) {

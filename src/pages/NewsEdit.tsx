@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Newspaper, Save } from "lucide-react";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { API_BASE_URL } from "@/lib/api";
 import { uploadMediaDirectly } from "@/lib/imageUpload";
 
@@ -16,6 +17,7 @@ const inputClass =
 const NewsEdit = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [uploadType, setUploadType] = useState<"image" | "youtube">("image");
   const [formData, setFormData] = useState({
     title: "",
@@ -30,14 +32,27 @@ const NewsEdit = () => {
   useEffect(() => {
     const fetchItem = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/news-feeds/${id}`);
-        const item = res.data.newsFeed;
-        setFormData({
-          title: item.title || "",
-          imageUrl: item.imageUrl || "",
-          details: item.details || "",
-        });
-        setUploadType(item.fileType === "youtube" ? "youtube" : "image");
+        // Backend doesn't support GET /api/news-feeds/:id (405 Method Not Allowed),
+        // so fetch the collection and find the matching entry client-side —
+        // same approach used for BlogEdit / TestimonialsEdit.
+        const res = await axios.get(`${API_BASE_URL}/api/news-feeds`);
+        const item = (res.data?.newsFeeds || []).find((n: any) => n.id === id);
+
+        if (item) {
+          setFormData({
+            title: item.title || "",
+            imageUrl: item.imageUrl || "",
+            details: item.details || "",
+          });
+          setUploadType(item.fileType === "youtube" ? "youtube" : "image");
+        } else {
+          toast({
+            title: "Not found",
+            description: "News feed item could not be loaded.",
+            variant: "destructive",
+          });
+          navigate("/news-data");
+        }
       } catch {
         toast({
           title: "Not found",
@@ -91,12 +106,17 @@ const NewsEdit = () => {
     }
 
     try {
-      await axios.put(`${API_BASE_URL}/api/news-feeds/${id}`, {
-        title: formData.title.trim(),
-        imageUrl: finalMediaUrl,
-        fileType: uploadType,
-        details: formData.details.trim(),
-      });
+      const token = await user?.getIdToken(true);
+      await axios.put(
+        `${API_BASE_URL}/api/news-feeds/${id}`,
+        {
+          title: formData.title.trim(),
+          imageUrl: finalMediaUrl,
+          fileType: uploadType,
+          details: formData.details.trim(),
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       toast({ title: "✅ Updated", description: "News feed item updated." });
       navigate("/news-data");
     } catch (error: any) {

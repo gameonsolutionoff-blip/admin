@@ -9,7 +9,6 @@ import {
   Building2,
   Star,
   Newspaper,
-  Award,
   Mail,
   ShieldCheck,
   LogOut,
@@ -17,6 +16,7 @@ import {
   Plus,
   ListChecks,
   ArrowUpRight,
+  Users,
 } from "lucide-react";
 
 type ContentGroup = {
@@ -101,6 +101,14 @@ const soloItems: ContentGroup[] = [
     icon: ShieldCheck,
     viewHref: "/admin-users",
     viewLabel: "Manage access",
+  },
+  {
+    key: "turf-contacts",
+    label: "Turf Lead Details",
+    description: "Every message submitted through the site's Turf Lead Form.",
+    icon: Users,
+    viewHref: "https://turf.gameonsolution.in/",
+    viewLabel: "View responses",
   },
 ];
 
